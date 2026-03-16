@@ -1,6 +1,6 @@
 {
-  "name": "langchain-nextjs-template",
-  "version": "0.0.0",
+  "name": "sori.page",
+  "version": "0.1.0",
   "private": true,
   "packageManager": "yarn@3.5.1",
   "scripts": {
