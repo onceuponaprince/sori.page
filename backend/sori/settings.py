@@ -41,12 +41,16 @@ MIDDLEWARE = [
 ROOT_URLCONF = "sori.urls"
 WSGI_APPLICATION = "sori.wsgi.application"
 
-# We use Neo4j as primary datastore, not SQL.
-# Django's ORM is only used for auth/sessions (SQLite is fine for dev).
+# Postgres via Supabase — handles auth, credits, generation history.
+# Neo4j handles the knowledge graph. Postgres handles everything else.
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "postgres"),
+        "USER": os.environ.get("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 
