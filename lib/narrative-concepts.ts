@@ -396,4 +396,236 @@ export const TEMPLATE_SCENES: TemplateScene[] = [
       { role: "Cynical Insider", archetype: "trickster", description: "Knows the truth, shares it obliquely" },
     ],
   },
+  {
+    id: "silence_lambs_first_meeting",
+    work: "The Silence of the Lambs",
+    scene_name: "Clarice Meets Hannibal",
+    beat_id: "meeting_the_mentor",
+    genre: "thriller",
+    description:
+      "The protagonist descends into a literal underworld to seek guidance from a brilliant but dangerous figure. The mentor demands vulnerability in exchange for knowledge.",
+    character_slots: [
+      { role: "Protagonist", archetype: "hero", description: "Capable but inexperienced, concealing personal wounds" },
+      { role: "Imprisoned Mentor", archetype: "mentor", description: "Genius predator who offers insight at a psychological price" },
+      { role: "Obstructive Gatekeeper", archetype: "guardian", description: "Authority figure who controls access and sets conditions" },
+    ],
+  },
+  {
+    id: "se7en_box",
+    work: "Se7en",
+    scene_name: "What's in the Box",
+    beat_id: "the_ordeal",
+    genre: "thriller",
+    description:
+      "The antagonist orchestrates a final trap that forces the protagonist into an impossible moral choice. The villain wins by making the hero confront their own capacity for darkness.",
+    character_slots: [
+      { role: "Protagonist", archetype: "hero", description: "Idealistic detective pushed to the breaking point" },
+      { role: "Antagonist", archetype: "shadow", description: "Methodical villain who has planned every step, including his own end" },
+      { role: "Veteran Partner", archetype: "mentor", description: "Experienced figure who sees the trap but cannot prevent it" },
+    ],
+  },
+  {
+    id: "no_country_coin_toss",
+    work: "No Country for Old Men",
+    scene_name: "The Coin Toss",
+    beat_id: "approach_inmost_cave",
+    genre: "thriller",
+    description:
+      "An ordinary person encounters an unstoppable force of violence and is subjected to a test they don't fully understand. Fate and free will collide in a mundane setting.",
+    character_slots: [
+      { role: "Innocent Bystander", archetype: "hero", description: "Ordinary person suddenly facing existential danger" },
+      { role: "Agent of Fate", archetype: "shadow", description: "Remorseless figure who operates by an alien moral code" },
+    ],
+  },
+  {
+    id: "when_harry_met_sally_deli",
+    work: "When Harry Met Sally",
+    scene_name: "The Deli Scene",
+    beat_id: "tests_allies_enemies",
+    genre: "romance",
+    description:
+      "A comedic confrontation about desire and authenticity in a public space. One character challenges the other's assumptions, flipping the power dynamic through performance.",
+    character_slots: [
+      { role: "Protagonist", archetype: "hero", description: "Confident in their worldview, about to be proven wrong" },
+      { role: "Love Interest", archetype: "shapeshifter", description: "Challenges the protagonist's certainties through bold demonstration" },
+      { role: "Bystander Commentator", archetype: "trickster", description: "Punctuates the moment with an audience-surrogate reaction" },
+    ],
+  },
+  {
+    id: "titanic_bow",
+    work: "Titanic",
+    scene_name: "Flying on the Bow",
+    beat_id: "reward",
+    genre: "romance",
+    description:
+      "After overcoming social barriers, the lovers share a transcendent moment of freedom and trust. The reward is emotional liberation, but the setting foreshadows impending catastrophe.",
+    character_slots: [
+      { role: "Sheltered Protagonist", archetype: "hero", description: "Breaking free from a constrained life, learning to trust" },
+      { role: "Free-Spirited Guide", archetype: "mentor", description: "Shows the protagonist a new way of being in the world" },
+    ],
+  },
+  {
+    id: "shining_all_work",
+    work: "The Shining",
+    scene_name: "All Work and No Play",
+    beat_id: "dark_night_of_soul",
+    genre: "horror",
+    description:
+      "A character discovers undeniable proof that someone they love has been consumed by madness. Isolation and supernatural influence have completed a terrifying transformation.",
+    character_slots: [
+      { role: "Discoverer", archetype: "hero", description: "Finally confronts the truth they have been denying" },
+      { role: "Corrupted Figure", archetype: "shadow", description: "Once trusted protector, now fully surrendered to destructive forces" },
+    ],
+  },
+  {
+    id: "alien_dinner_scene",
+    work: "Alien",
+    scene_name: "The Chestburster",
+    beat_id: "call_to_adventure",
+    genre: "horror",
+    description:
+      "A moment of false calm is shattered by a violent eruption from within. The real threat reveals itself in the most intimate and horrifying way possible, and survival becomes the only goal.",
+    character_slots: [
+      { role: "Survivor Protagonist", archetype: "hero", description: "Resourceful crew member who will be forced to lead" },
+      { role: "Victim", archetype: "herald", description: "Their fate announces the true nature of the threat" },
+      { role: "Authority Figure", archetype: "guardian", description: "Tries to maintain order as everything falls apart" },
+    ],
+  },
+  {
+    id: "get_out_sunken_place",
+    work: "Get Out",
+    scene_name: "The Sunken Place",
+    beat_id: "the_ordeal",
+    genre: "horror",
+    description:
+      "The protagonist is psychologically trapped by a figure they trusted. What appeared to be hospitality is revealed as predation, and the hero loses control of their own consciousness.",
+    character_slots: [
+      { role: "Protagonist", archetype: "hero", description: "Outsider who ignored warning signs out of politeness and hope" },
+      { role: "Manipulator", archetype: "shadow", description: "Uses intimacy and trust as weapons of control" },
+    ],
+  },
+  {
+    id: "princess_bride_inigo",
+    work: "The Princess Bride",
+    scene_name: "Inigo's Revenge",
+    beat_id: "the_resurrection",
+    genre: "comedy",
+    description:
+      "A supporting character completes their lifelong quest by confronting the villain who wronged them. A repeated phrase transforms from rehearsal into catharsis, blending humor with genuine emotion.",
+    character_slots: [
+      { role: "Avenging Hero", archetype: "hero", description: "Driven by a single promise, finally facing their moment" },
+      { role: "Villain", archetype: "shadow", description: "Cowardly antagonist who underestimates the hero's resolve" },
+      { role: "Loyal Companion", archetype: "ally", description: "Provides crucial support to make the confrontation possible" },
+    ],
+  },
+  {
+    id: "groundhog_day_final_loop",
+    work: "Groundhog Day",
+    scene_name: "The Final Day",
+    beat_id: "return_with_elixir",
+    genre: "comedy",
+    description:
+      "After countless failed attempts, the protagonist has transformed into the best version of themselves. They use accumulated wisdom selflessly, and the cycle finally breaks.",
+    character_slots: [
+      { role: "Transformed Protagonist", archetype: "hero", description: "Once cynical and selfish, now genuinely compassionate" },
+      { role: "Love Interest", archetype: "shapeshifter", description: "Has been the moral compass all along; finally sees the real person" },
+    ],
+  },
+  {
+    id: "stand_by_me_bridge",
+    work: "Stand By Me",
+    scene_name: "The Train Bridge",
+    beat_id: "crossing_threshold",
+    genre: "coming_of_age",
+    description:
+      "The group of young protagonists faces a physical danger that forces them past the point of no return. Childhood safety is left behind as they commit to their quest.",
+    character_slots: [
+      { role: "Sensitive Protagonist", archetype: "hero", description: "Thoughtful kid processing grief, finding courage through friendship" },
+      { role: "Bold Friend", archetype: "ally", description: "Brave on the outside, hiding a troubled home life" },
+      { role: "Troubled Leader", archetype: "trickster", description: "Charismatic but reckless, pushes the group forward" },
+    ],
+  },
+  {
+    id: "breakfast_club_confession",
+    work: "The Breakfast Club",
+    scene_name: "The Group Confession",
+    beat_id: "approach_inmost_cave",
+    genre: "coming_of_age",
+    description:
+      "Forced into proximity, a group of strangers drop their social masks and reveal the pain behind their archetypes. Vulnerability becomes the path to genuine connection.",
+    character_slots: [
+      { role: "Outcast Protagonist", archetype: "hero", description: "Has the least social armor, speaks truth first" },
+      { role: "Popular Facade", archetype: "shapeshifter", description: "Reveals that privilege is its own kind of prison" },
+      { role: "Authority Antagonist", archetype: "guardian", description: "Absent but ever-present force that created the crucible" },
+    ],
+  },
+  {
+    id: "matrix_red_pill",
+    work: "The Matrix",
+    scene_name: "The Red Pill Choice",
+    beat_id: "crossing_threshold",
+    genre: "sci_fi",
+    description:
+      "The protagonist is offered a binary choice between comfortable ignorance and painful truth. Choosing truth means abandoning their entire understanding of reality.",
+    character_slots: [
+      { role: "Chosen Protagonist", archetype: "hero", description: "Senses something is wrong with the world, seeks answers" },
+      { role: "Rebel Mentor", archetype: "mentor", description: "Offers the choice but cannot make it for the hero" },
+      { role: "Agent of the System", archetype: "shadow", description: "Represents the force that will pursue the hero once they choose" },
+    ],
+  },
+  {
+    id: "interstellar_departure",
+    work: "Interstellar",
+    scene_name: "Leaving the Children Behind",
+    beat_id: "refusal_of_call",
+    genre: "sci_fi",
+    description:
+      "The protagonist must choose between personal love and universal duty. The emotional cost of answering the call is made devastatingly concrete through a parent-child separation.",
+    character_slots: [
+      { role: "Protagonist Parent", archetype: "hero", description: "Torn between saving the world and being present for their child" },
+      { role: "Child Left Behind", archetype: "ally", description: "Represents the personal stakes and emotional cost of the mission" },
+      { role: "Mission Commander", archetype: "herald", description: "Embodies the call that cannot be refused despite its price" },
+    ],
+  },
+  {
+    id: "knives_out_reveal",
+    work: "Knives Out",
+    scene_name: "The Will Reading",
+    beat_id: "call_to_adventure",
+    genre: "mystery",
+    description:
+      "A gathering of suspects reacts to shocking news that upends their expectations. Hidden motives surface instantly, and the real investigation begins.",
+    character_slots: [
+      { role: "Outsider Suspect", archetype: "hero", description: "An unlikely central figure suddenly thrust into the spotlight" },
+      { role: "Eccentric Detective", archetype: "mentor", description: "Observes the reactions, already piecing together the truth" },
+      { role: "Entitled Family Member", archetype: "shadow", description: "Masks hostility behind a veneer of civility" },
+    ],
+  },
+  {
+    id: "mockingbird_courthouse",
+    work: "To Kill a Mockingbird",
+    scene_name: "The Courthouse Defense",
+    beat_id: "the_ordeal",
+    genre: "literary",
+    description:
+      "A principled figure stands against the prejudice of an entire community to defend an innocent person. The moral argument is won but the social battle is lost, exposing systemic injustice.",
+    character_slots: [
+      { role: "Moral Authority", archetype: "mentor", description: "Fights for justice knowing the system is rigged against them" },
+      { role: "Young Observer", archetype: "hero", description: "Watches innocence collide with injustice, permanently changed" },
+      { role: "Wrongly Accused", archetype: "ally", description: "Dignified in the face of dehumanization, embodies the stakes" },
+    ],
+  },
+  {
+    id: "lady_bird_car_argument",
+    work: "Lady Bird",
+    scene_name: "The Car Argument",
+    beat_id: "ordinary_world",
+    genre: "coming_of_age",
+    description:
+      "A parent and child clash over identity and ambition in a confined space. Love and resentment are inseparable, establishing the central tension of growing apart to grow up.",
+    character_slots: [
+      { role: "Restless Teenager", archetype: "hero", description: "Desperate to become someone new, rejecting where they come from" },
+      { role: "Practical Parent", archetype: "guardian", description: "Expresses love through criticism, fears losing their child" },
+    ],
+  },
 ];

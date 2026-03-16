@@ -1,30 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { STORY_BEATS, GENRES, type GenreId } from "@/lib/narrative-concepts";
+import { STORY_BEATS, GENRES } from "@/lib/narrative-concepts";
 
 const anthropic = new Anthropic();
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   try {
-    const { genre, beat_id, context } = await req.json();
+    const { genre, beat_id, context, user_id } = await req.json();
 
-    // Validate inputs
     const selectedGenre = GENRES.find((g) => g.id === genre);
     const selectedBeat = STORY_BEATS.find((b) => b.id === beat_id);
 
     if (!selectedGenre || !selectedBeat) {
-      return NextResponse.json(
-        { error: "Invalid genre or beat selection" },
-        { status: 400 },
+      return new Response(
+        JSON.stringify({ error: "Invalid genre or beat selection" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
-    // Find preceding beat for structural context
     const precedingBeats = selectedBeat.follows
       .map((id) => STORY_BEATS.find((b) => b.id === id))
       .filter(Boolean);
-
-    // Find the next beat for forward momentum
     const nextBeat = STORY_BEATS.find((b) => b.follows.includes(beat_id));
 
     const systemPrompt = `You are sori.page's narrative engine. You generate story scenes that are structurally grounded in verified narrative concepts.
@@ -38,7 +36,7 @@ When generating a scene, you must:
 4. Create forward momentum toward the next beat
 5. Ground the scene in the genre's tonal expectations
 
-After the scene, provide a "Structural Notes" section that explains:
+After the scene, output the exact marker "---STRUCTURAL_NOTES---" on its own line, then provide structural notes explaining:
 - Which narrative concepts drove the scene
 - The emotional temperature and why
 - What this scene sets up for the next beat
@@ -61,44 +59,118 @@ ${nextBeat ? `NEXT BEAT: ${nextBeat.name} — ${nextBeat.description}` : "This i
 
 ${context ? `WRITER'S CONTEXT: ${context}` : "No additional context provided. Generate a fresh scenario that demonstrates this beat's narrative function."}
 
-Generate the scene (500-800 words of prose) followed by the Structural Notes analysis.`;
+Generate the scene (500-800 words of prose) followed by the structural notes.`;
 
-    const message = await anthropic.messages.create({
+    // Stream the response
+    const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    const content =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const metadata = {
+      genre: selectedGenre,
+      beat: selectedBeat,
+      preceding_beats: precedingBeats,
+      next_beat: nextBeat || null,
+      concepts_used: [
+        selectedBeat.name,
+        ...selectedBeat.typical_tropes,
+        selectedGenre.structural_tendency,
+      ],
+    };
 
-    // Split scene from structural notes
-    const notesIndex = content.indexOf("Structural Notes");
-    const scene = notesIndex > -1 ? content.slice(0, notesIndex).trim() : content;
-    const notes =
-      notesIndex > -1 ? content.slice(notesIndex).trim() : "";
+    // Create a ReadableStream that sends SSE events
+    const encoder = new TextEncoder();
+    let fullText = "";
 
-    return NextResponse.json({
-      scene,
-      structural_notes: notes,
-      metadata: {
-        genre: selectedGenre,
-        beat: selectedBeat,
-        preceding_beats: precedingBeats,
-        next_beat: nextBeat || null,
-        concepts_used: [
-          selectedBeat.name,
-          ...selectedBeat.typical_tropes,
-          selectedGenre.structural_tendency,
-        ],
+    const readable = new ReadableStream({
+      async start(controller) {
+        // Send metadata first
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: "metadata", metadata })}\n\n`,
+          ),
+        );
+
+        stream.on("text", (text) => {
+          fullText += text;
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "text", text })}\n\n`,
+            ),
+          );
+        });
+
+        stream.on("end", async () => {
+          // Parse scene vs notes using the marker
+          const marker = "---STRUCTURAL_NOTES---";
+          const markerIdx = fullText.indexOf(marker);
+          const scene =
+            markerIdx > -1 ? fullText.slice(0, markerIdx).trim() : fullText;
+          const notes =
+            markerIdx > -1 ? fullText.slice(markerIdx + marker.length).trim() : "";
+
+          // Send completion event with parsed data
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "done", scene_length: scene.length, has_notes: !!notes })}\n\n`,
+            ),
+          );
+
+          // Save to Supabase if user is authenticated
+          if (user_id) {
+            try {
+              const { createServerClient } = await import("@/lib/supabase");
+              const supabase = createServerClient();
+              await supabase.from("generations").insert({
+                user_id,
+                generation_type: "beat",
+                input_params: { genre, beat_id, context },
+                output_text: scene,
+                structural_notes: notes,
+                metadata,
+                credits_used: 1,
+              });
+              // Deduct credit
+              await supabase.rpc("deduct_credits", {
+                p_user_id: user_id,
+                p_amount: 1,
+              });
+            } catch (e) {
+              console.error("Failed to save generation:", e);
+            }
+          }
+
+          controller.close();
+        });
+
+        stream.on("error", (error) => {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "error", error: String(error) })}\n\n`,
+            ),
+          );
+          controller.close();
+        });
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
     console.error("Beat generation error:", error);
-    return NextResponse.json(
-      { error: "Generation failed. Check your ANTHROPIC_API_KEY." },
-      { status: 500 },
+    return new Response(
+      JSON.stringify({
+        error: "Generation failed. Check your ANTHROPIC_API_KEY.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }
