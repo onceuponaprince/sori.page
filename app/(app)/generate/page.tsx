@@ -4,47 +4,29 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { STORY_BEATS, GENRES } from "@/lib/narrative-concepts";
+import { useStream } from "@/lib/use-stream";
 
 export default function GeneratePage() {
   const [genre, setGenre] = useState("");
   const [beatId, setBeatId] = useState("");
   const [context, setContext] = useState("");
-  const [result, setResult] = useState<{
-    scene: string;
-    structural_notes: string;
-    metadata: Record<string, unknown>;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    mainContent,
+    structuralNotes,
+    metadata,
+    loading,
+    error,
+    done,
+    generate,
+  } = useStream("/api/generate/beat");
 
-  async function handleGenerate() {
+  function handleGenerate() {
     if (!genre || !beatId) return;
-    setLoading(true);
-    setError("");
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/generate/beat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ genre, beat_id: beatId, context }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Generation failed");
-        return;
-      }
-
-      setResult(await res.json());
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    generate({ genre, beat_id: beatId, context });
   }
 
   const selectedBeat = STORY_BEATS.find((b) => b.id === beatId);
+  const hasContent = mainContent.length > 0;
 
   return (
     <div className="p-6 md:p-10 max-w-6xl mx-auto">
@@ -105,7 +87,8 @@ export default function GeneratePage() {
           {/* Optional context */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Your Context <span className="text-muted-foreground">(optional)</span>
+              Your Context{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </label>
             <Textarea
               value={context}
@@ -125,7 +108,7 @@ export default function GeneratePage() {
           </Button>
         </div>
 
-        {/* Output */}
+        {/* Output — streams in real time */}
         <div className="space-y-6">
           {error && (
             <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
@@ -133,20 +116,9 @@ export default function GeneratePage() {
             </div>
           )}
 
-          {loading && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center space-y-3">
-                <div className="animate-pulse text-lg">Generating scene...</div>
-                <p className="text-sm">
-                  Querying narrative concepts and building structural scaffold
-                </p>
-              </div>
-            </div>
-          )}
-
-          {result && (
+          {hasContent && (
             <>
-              {/* Scene output */}
+              {/* Scene output — streams word by word */}
               <div className="border rounded-xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="font-semibold text-lg">Generated Scene</h2>
@@ -155,50 +127,59 @@ export default function GeneratePage() {
                       {selectedBeat.name}
                     </span>
                   )}
+                  {loading && (
+                    <span className="text-xs text-muted-foreground animate-pulse">
+                      streaming...
+                    </span>
+                  )}
                 </div>
                 <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                  {result.scene}
+                  {mainContent}
+                  {loading && <span className="animate-pulse">|</span>}
                 </div>
               </div>
 
-              {/* Structural notes — the differentiator */}
-              {result.structural_notes && (
+              {/* Structural notes — appear after marker is streamed */}
+              {structuralNotes && (
                 <div className="border border-dashed rounded-xl p-6 bg-muted/30">
                   <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
                     Structural Notes
                   </h3>
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
-                    {result.structural_notes}
+                    {structuralNotes}
+                    {loading && <span className="animate-pulse">|</span>}
                   </div>
                 </div>
               )}
 
-              {/* Concept provenance */}
-              <div className="border rounded-xl p-4">
-                <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-                  Concepts Used
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    (result.metadata?.concepts_used as string[]) || []
-                  ).map((concept, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-muted px-2 py-1 rounded-md"
-                    >
-                      {concept.replace(/_/g, " ")}
-                    </span>
-                  ))}
+              {/* Concept provenance — shows immediately from metadata */}
+              {metadata && (
+                <div className="border rounded-xl p-4">
+                  <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+                    Concepts Used
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      (metadata.concepts_used as string[]) || []
+                    ).map((concept, i) => (
+                      <span
+                        key={i}
+                        className="text-xs bg-muted px-2 py-1 rounded-md"
+                      >
+                        {concept.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
 
-          {!result && !loading && !error && (
+          {!hasContent && !loading && !error && (
             <div className="flex items-center justify-center h-64 text-muted-foreground border border-dashed rounded-xl">
               <p className="text-center max-w-xs">
-                Select a genre and story beat, then generate. You&apos;ll see the
-                scene and the structural reasoning behind it.
+                Select a genre and story beat, then generate. You&apos;ll see
+                the scene and the structural reasoning behind it.
               </p>
             </div>
           )}

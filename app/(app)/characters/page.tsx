@@ -8,21 +8,22 @@ import {
   GENRES,
   TEMPLATE_SCENES,
 } from "@/lib/narrative-concepts";
+import { useStream } from "@/lib/use-stream";
 
 export default function CharactersPage() {
   const [archetypeId, setArchetypeId] = useState("");
   const [genre, setGenre] = useState("");
   const [traits, setTraits] = useState("");
   const [sceneId, setSceneId] = useState("");
-  const [result, setResult] = useState<{
-    profile: string;
-    structural_notes: string;
-    metadata: Record<string, unknown>;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    mainContent,
+    structuralNotes,
+    metadata,
+    loading,
+    error,
+    generate,
+  } = useStream("/api/generate/character");
 
-  // Filter template scenes by genre and archetype
   const availableScenes = TEMPLATE_SCENES.filter(
     (s) =>
       (!genre || s.genre === genre) &&
@@ -30,41 +31,20 @@ export default function CharactersPage() {
         s.character_slots.some((slot) => slot.archetype === archetypeId)),
   );
 
-  async function handleGenerate() {
+  function handleGenerate() {
     if (!archetypeId || !genre) return;
-    setLoading(true);
-    setError("");
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/generate/character", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          archetype_id: archetypeId,
-          genre,
-          traits,
-          scene_id: sceneId || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Generation failed");
-        return;
-      }
-
-      setResult(await res.json());
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    generate({
+      archetype_id: archetypeId,
+      genre,
+      traits,
+      scene_id: sceneId || undefined,
+    });
   }
 
   const selectedArchetype = CHARACTER_ARCHETYPES.find(
     (a) => a.id === archetypeId,
   );
+  const hasContent = mainContent.length > 0;
 
   return (
     <div className="p-6 md:p-10 max-w-6xl mx-auto">
@@ -79,7 +59,6 @@ export default function CharactersPage() {
       <div className="grid md:grid-cols-[380px,1fr] gap-8">
         {/* Controls */}
         <div className="space-y-6">
-          {/* Archetype selection */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Character Archetype
@@ -107,7 +86,6 @@ export default function CharactersPage() {
             </div>
           </div>
 
-          {/* Genre */}
           <div>
             <label className="text-sm font-medium mb-2 block">Genre</label>
             <div className="grid grid-cols-2 gap-2">
@@ -130,7 +108,6 @@ export default function CharactersPage() {
             </div>
           </div>
 
-          {/* Template scene insertion */}
           {availableScenes.length > 0 && (
             <div>
               <label className="text-sm font-medium mb-2 block">
@@ -160,7 +137,6 @@ export default function CharactersPage() {
             </div>
           )}
 
-          {/* Custom traits */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Custom Traits{" "}
@@ -184,7 +160,7 @@ export default function CharactersPage() {
           </Button>
         </div>
 
-        {/* Output */}
+        {/* Output — streams in real time */}
         <div className="space-y-6">
           {error && (
             <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
@@ -192,22 +168,8 @@ export default function CharactersPage() {
             </div>
           )}
 
-          {loading && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center space-y-3">
-                <div className="animate-pulse text-lg">
-                  Building character...
-                </div>
-                <p className="text-sm">
-                  Grounding archetype in genre conventions and narrative function
-                </p>
-              </div>
-            </div>
-          )}
-
-          {result && (
+          {hasContent && (
             <>
-              {/* Character profile */}
               <div className="border rounded-xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="font-semibold text-lg">Character Profile</h2>
@@ -216,46 +178,53 @@ export default function CharactersPage() {
                       {selectedArchetype.name}
                     </span>
                   )}
+                  {loading && (
+                    <span className="text-xs text-muted-foreground animate-pulse">
+                      streaming...
+                    </span>
+                  )}
                 </div>
                 <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-                  {result.profile}
+                  {mainContent}
+                  {loading && <span className="animate-pulse">|</span>}
                 </div>
               </div>
 
-              {/* Structural notes */}
-              {result.structural_notes && (
+              {structuralNotes && (
                 <div className="border border-dashed rounded-xl p-6 bg-muted/30">
                   <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
                     Structural Notes
                   </h3>
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
-                    {result.structural_notes}
+                    {structuralNotes}
+                    {loading && <span className="animate-pulse">|</span>}
                   </div>
                 </div>
               )}
 
-              {/* Concepts */}
-              <div className="border rounded-xl p-4">
-                <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-                  Concepts Used
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    (result.metadata?.concepts_used as string[]) || []
-                  ).map((concept, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-muted px-2 py-1 rounded-md"
-                    >
-                      {concept.replace(/_/g, " ")}
-                    </span>
-                  ))}
+              {metadata && (
+                <div className="border rounded-xl p-4">
+                  <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+                    Concepts Used
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {((metadata.concepts_used as string[]) || []).map(
+                      (concept, i) => (
+                        <span
+                          key={i}
+                          className="text-xs bg-muted px-2 py-1 rounded-md"
+                        >
+                          {concept.replace(/_/g, " ")}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
 
-          {!result && !loading && !error && (
+          {!hasContent && !loading && !error && (
             <div className="flex items-center justify-center h-64 text-muted-foreground border border-dashed rounded-xl">
               <p className="text-center max-w-xs">
                 Select an archetype and genre. Optionally choose a template

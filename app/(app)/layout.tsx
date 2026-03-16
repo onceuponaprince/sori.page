@@ -17,6 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <ActiveLink href="/characters">Characters</ActiveLink>
             <ActiveLink href="/contribute">Contribute</ActiveLink>
             <ActiveLink href="/gaps">Gaps</ActiveLink>
+            <ActiveLink href="/admin">Admin</ActiveLink>
           </nav>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
