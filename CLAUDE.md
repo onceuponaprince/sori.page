@@ -182,9 +182,20 @@ Generations are saved to Supabase's `generations` table with full input/output h
 python manage.py ingest_tvtropes --max-per-index 25
 python manage.py ingest_tvtropes --dry-run          # Preview without writing
 
-# Scrape IMDB top movies
-python manage.py ingest_imdb --max-works 50
-python manage.py ingest_imdb --dry-run
+# Scrape IMDB top movies (legacy HTML scraper; may be blocked by AWS WAF)
+python manage.py ingest_imdb --source scraper --max-works 50
+python manage.py ingest_imdb --source scraper --dry-run
+
+# Option 1 (recommended): IMDB Non-Commercial Datasets
+# Download title.basics.tsv.gz + title.ratings.tsv.gz from https://datasets.imdbws.com/
+# and place them in IMDB_DATASETS_DIR (default: ./data/imdb)
+python manage.py ingest_imdb --source datasets --datasets-dir ./data/imdb --max-works 50
+python manage.py ingest_imdb --source datasets --dry-run
+
+# Option 2: OMDb API fallback
+# Requires OMDB_API_KEY and explicit imdb ids
+python manage.py ingest_imdb --source omdb --imdb-ids tt0111161,tt0068646 --max-works 2
+python manage.py ingest_imdb --source omdb --imdb-ids tt0111161,tt0068646 --dry-run
 
 # Scrape Project Gutenberg fiction
 python manage.py ingest_gutenberg --subject Fiction --max-works 20
@@ -207,3 +218,5 @@ python manage.py init_graph
 | `NEO4J_PASSWORD` | For backend | Neo4j password |
 | `WEAVIATE_URL` | For backend | Weaviate REST endpoint |
 | `NEXT_PUBLIC_API_URL` | Optional | Django backend URL (default: localhost:8000) |
+| `OMDB_API_KEY` | Optional | Required only when using OMDb API fallback ingestion |
+| `IMDB_DATASETS_DIR` | Optional | Directory containing IMDB `title.basics` and `title.ratings` TSV files |

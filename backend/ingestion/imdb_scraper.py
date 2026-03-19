@@ -95,7 +95,31 @@ class IMDBScraper:
         try:
             resp = self.session.get(full_url, timeout=20)
             resp.raise_for_status()
-            return BeautifulSoup(resp.text, "html.parser")
+
+            # IMDB uses AWS WAF which returns HTTP 202 with a JS challenge
+            # page instead of actual content. requests can't solve it.
+            if resp.status_code != 200:
+                logger.error(
+                    "Unexpected status %d from %s — IMDB may be rate-limiting "
+                    "or blocking this request.",
+                    resp.status_code,
+                    full_url,
+                )
+                return None
+
+            body = resp.text
+            if "awswaf" in body or "challenge.js" in body or "AwsWafIntegration" in body:
+                logger.error(
+                    "IMDB returned an AWS WAF bot-challenge page for %s. "
+                    "The plain-HTTP scraper cannot solve JavaScript challenges. "
+                    "To fix this, either: (1) add a browser-like User-Agent and "
+                    "cookies from a real session, or (2) switch to the IMDB "
+                    "Non-Commercial Datasets at https://datasets.imdbws.com/",
+                    full_url,
+                )
+                return None
+
+            return BeautifulSoup(body, "html.parser")
         except requests.RequestException as e:
             logger.warning("Failed to fetch %s: %s", full_url, e)
             return None
@@ -342,6 +366,14 @@ class IMDBScraper:
                     imdb_ids.append(title_id)
 
         imdb_ids = imdb_ids[:max_works]
+        if not imdb_ids:
+            logger.error(
+                "No IMDB title IDs found in the Top 250 chart page. "
+                "The page structure may have changed, or IMDB blocked the request. "
+                "Check the log above for WAF/challenge errors."
+            )
+            return []
+
         logger.info("Found %d titles in Top 250 chart", len(imdb_ids))
 
         works = []

@@ -6,7 +6,7 @@ psycopg2-binary==2.9.10
 
 # Neo4j
 neomodel==5.4.1
-neo4j==5.27.0
+neo4j>=5.26.0
 
 # Weaviate
 weaviate-client==4.9.6

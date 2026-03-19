@@ -47,6 +47,8 @@ class SourceNode(StructuredNode):
     name = StringProperty(required=True)
     source_type = StringProperty(
         choices={
+            "imdb": "IMDB",
+            "omdb": "OMDb API",
             "tvtropes": "TV Tropes",
             "craft_book": "Craft Book",
             "academic": "Academic Paper",
