@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useStream } from "@/lib/use-stream";
 import { createBrowserClient } from "@/lib/supabase";
 import type { AnalyzerResult, EpistemicState } from "@/lib/analyzer-types";
+import { MultiverseSidebar } from "@/components/multiverse/MultiverseSidebar";
 
 const STORAGE_KEY = "sori-treehouse-draft-v1";
 
@@ -91,6 +92,11 @@ export function SoriEditor() {
   const [savedLabel, setSavedLabel] = useState("Saved locally");
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
+
+  // ── Multiverse Sidebar state ──
+  // Controls visibility of the "Narrative Laboratory" panel.
+  // When open, the grid expands from 2 columns to 3.
+  const [multiverseOpen, setMultiverseOpen] = useState(false);
   const {
     analysis,
     metadata,
@@ -235,7 +241,7 @@ export function SoriEditor() {
 
   if (!mounted) {
     return (
-      <div className="grid gap-5 p-4 md:p-6 xl:grid-cols-[minmax(0,1fr),360px]">
+      <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr),360px,380px]" : "xl:grid-cols-[minmax(0,1fr),360px]"}`}>
         <section className="sori-paper rounded-[1.75rem] p-6">
           <div className="h-[72dvh] rounded-[1.5rem] border border-border/60 bg-background/35" />
         </section>
@@ -251,7 +257,7 @@ export function SoriEditor() {
   }
 
   return (
-    <div className="grid gap-5 p-4 md:p-6 xl:grid-cols-[minmax(0,1fr),360px]">
+    <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr),360px,380px]" : "xl:grid-cols-[minmax(0,1fr),360px]"}`}>
       <section className="sori-paper rounded-[1.75rem] p-5 sm:p-6">
         <div className="flex flex-col gap-4 border-b border-border/65 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
@@ -285,6 +291,13 @@ export function SoriEditor() {
             >
               {loading ? "Reading structure..." : "Run analyzer"}
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setMultiverseOpen(!multiverseOpen)}
+              className={multiverseOpen ? "border-[var(--sori-accent-coral)]/40 bg-[var(--sori-accent-coral)]/5" : ""}
+            >
+              {multiverseOpen ? "Close lab" : "Test plausibility"}
+            </Button>
           </div>
         </div>
 
@@ -311,6 +324,27 @@ export function SoriEditor() {
         loading={loading}
         error={error}
       />
+
+      {/* Multiverse Scene Tester — the "Narrative Laboratory" sidebar.
+          Opens as a third column when the writer clicks "Test plausibility".
+          Character IDs are hardcoded as an example — in production these
+          would come from the story's CharacterNode list in Neo4j. */}
+      {multiverseOpen && (
+        <MultiverseSidebar
+          storyUid={storyUid}
+          isOpen={multiverseOpen}
+          onClose={() => setMultiverseOpen(false)}
+          onBeatCreated={(beatId) => {
+            setSavedLabel(`Beat ${beatId.slice(0, 8)} created`);
+          }}
+          availableCharacterIds={
+            analysis?.epistemicState?.characters.map((c) => ({
+              id: c.name.toLowerCase().replace(/\s+/g, "-"),
+              name: c.name,
+            })) || []
+          }
+        />
+      )}
     </div>
   );
 }

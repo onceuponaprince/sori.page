@@ -126,6 +126,24 @@ WEAVIATE_URL = os.environ.get("WEAVIATE_URL", "http://localhost:8080")
 # Anthropic API
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
+# ── Celery (async task queue for Multiverse Scene Tester) ──
+# Redis serves as both the message broker (task dispatch) and the
+# result backend (task status/return values). The default URL assumes
+# the Docker Compose redis service on the standard port.
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
+# Serialize task arguments and results as JSON so they're inspectable
+# in Redis and don't require pickle (security risk with untrusted data).
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Keep results for 1 hour. The frontend polls for completion, then the
+# result can be garbage collected. No need to keep it longer since the
+# actual data lives in Neo4j.
+CELERY_RESULT_EXPIRES = 3600
+
 # CORS - allow Next.js frontend
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

@@ -15,6 +15,15 @@ from graph.models.story import (
     CharacterNode,
     StoryFactNode,
 )
+from graph.models.multiverse import (
+    MultiverseRootNode,
+    MultiverseSceneNode,
+    ChoiceEdgeNode,
+    StateSnapshotNode,
+    CharacterSnapshotNode,
+    ChoiceRel,
+    SnapshotCharacterRel,
+)
 
 __all__ = [
     "ConceptNode",
@@ -31,4 +40,11 @@ __all__ = [
     "TemporalRel",
     "CharacterNode",
     "StoryFactNode",
+    "MultiverseRootNode",
+    "MultiverseSceneNode",
+    "ChoiceEdgeNode",
+    "StateSnapshotNode",
+    "CharacterSnapshotNode",
+    "ChoiceRel",
+    "SnapshotCharacterRel",
 ]
