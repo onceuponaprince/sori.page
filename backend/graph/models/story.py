@@ -15,7 +15,9 @@ Architecture:
     between the knowledge graph and user-generated content.
 """
 from neomodel import (
+    ArrayProperty,
     StructuredNode,
+    StructuredRel,
     StringProperty,
     IntegerProperty,
     JSONProperty,
@@ -105,3 +107,59 @@ class SceneNode(StructuredNode):
     branches_to = RelationshipTo("SceneNode", "BRANCHES_TO")
     flashes_back_to = RelationshipTo("SceneNode", "FLASHES_BACK_TO")
     parallels = RelationshipTo("SceneNode", "PARALLELS")
+
+
+# ============================================================
+# Epistemic tracking — who knows what, when
+# ============================================================
+
+
+class TemporalRel(StructuredRel):
+    """Edge properties for KNOWS_AT and ACTS_ON relationships.
+
+    beat_index is 1-based and corresponds to outline line numbers so the
+    frontend can highlight the exact beat where a violation occurs.
+    """
+
+    beat_index = IntegerProperty(required=True)
+    confidence = FloatProperty(default=0.7)
+    source = StringProperty(default="heuristic")
+
+
+class CharacterNode(StructuredNode):
+    """A named character extracted from a writer's outline.
+
+    Scoped to a single story via story_uid. The epistemic module creates
+    these during analysis and links them to StoryFactNodes via temporal edges.
+    """
+
+    uid = UniqueIdProperty()
+    name = StringProperty(required=True, index=True)
+    story_uid = StringProperty(required=True, index=True)
+    aliases = ArrayProperty(StringProperty(), default=[])
+    role_hint = StringProperty()
+
+    created_at = DateTimeProperty(default_now=True)
+
+    knows = RelationshipTo("StoryFactNode", "KNOWS_AT", model=TemporalRel)
+    acts_on = RelationshipTo("StoryFactNode", "ACTS_ON", model=TemporalRel)
+
+
+class StoryFactNode(StructuredNode):
+    """A discrete piece of story information that characters can learn or act on.
+
+    Examples: "the father wrote apology letters", "the witness is alive",
+    "the detective's partner is the mole". Each fact is introduced at a
+    specific beat and may be learned by characters at different beats.
+    """
+
+    uid = UniqueIdProperty()
+    story_uid = StringProperty(required=True, index=True)
+    description = StringProperty(required=True)
+    introduced_at_beat = IntegerProperty(required=True)
+    fact_type = StringProperty(default="information")
+
+    created_at = DateTimeProperty(default_now=True)
+
+    known_by = RelationshipFrom("CharacterNode", "KNOWS_AT", model=TemporalRel)
+    acted_on_by = RelationshipFrom("CharacterNode", "ACTS_ON", model=TemporalRel)

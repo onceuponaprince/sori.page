@@ -7,13 +7,16 @@
  */
 export default function ContributePage() {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
-      <h2 className="text-2xl font-bold">Contributor Dashboard</h2>
-      <p className="text-muted-foreground max-w-md text-center">
-        Review proposed concept clusters, formalize knowledge nodes, and
-        participate in consensus. The knowledge graph grows through your
-        expertise.
-      </p>
+    <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center p-8">
+      <div className="sori-paper w-full rounded-3xl p-10 text-center">
+        <p className="sori-kicker text-xs">contributors</p>
+        <h2 className="sori-title mt-2 text-4xl">Contributor Dashboard</h2>
+        <p className="mx-auto mt-4 max-w-xl text-[var(--sori-text-secondary)]">
+          Review proposed concept clusters, formalize knowledge nodes, and
+          participate in consensus. The knowledge graph grows through your
+          expertise.
+        </p>
+      </div>
     </div>
   );
 }

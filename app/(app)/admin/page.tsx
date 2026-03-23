@@ -28,9 +28,11 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <div className="rounded-lg border border-input bg-background p-6 flex flex-col gap-1 hover:bg-accent/50 transition-colors">
-      <span className="text-3xl font-bold tabular-nums">{value}</span>
-      <span className="text-sm text-muted-foreground">{label}</span>
+    <div className="sori-panel flex flex-col gap-1 rounded-xl p-6 transition-transform hover:-translate-y-1">
+      <span className="text-3xl font-bold tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
+        {value}
+      </span>
+      <span className="text-sm text-[var(--sori-text-secondary)]">{label}</span>
     </div>
   );
   if (href) return <Link href={href}>{content}</Link>;
@@ -64,18 +66,19 @@ export default function AdminDashboardPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto flex flex-col gap-8">
+    <div className="mx-auto flex max-w-5xl flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="sori-kicker text-xs">admin</p>
+          <h1 className="sori-title mt-2 text-3xl">Admin Dashboard</h1>
+          <p className="mt-1 text-sm text-[var(--sori-text-secondary)]">
             Manage the Neo4j knowledge graph
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-md border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-200">
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           {error}
         </div>
       )}
@@ -114,9 +117,9 @@ export default function AdminDashboardPage() {
       {/* Recent activity placeholder */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Recent Activity</h2>
-        <div className="rounded-lg border border-input divide-y divide-input">
+        <div className="sori-panel divide-y divide-border rounded-lg">
           {loading ? (
-            <div className="p-4 text-sm text-muted-foreground">
+            <div className="p-4 text-sm text-[var(--sori-text-secondary)]">
               Loading...
             </div>
           ) : (
@@ -157,9 +160,9 @@ function ActivityRow({
     <div className="flex items-center justify-between px-4 py-3 text-sm">
       <div className="flex flex-col gap-0.5">
         <span className="font-medium">{action}</span>
-        <span className="text-muted-foreground text-xs">{detail}</span>
+        <span className="text-xs text-[var(--sori-text-secondary)]">{detail}</span>
       </div>
-      <span className="text-muted-foreground text-xs whitespace-nowrap">
+      <span className="whitespace-nowrap text-xs text-[var(--sori-text-secondary)]">
         {time}
       </span>
     </div>

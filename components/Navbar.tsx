@@ -7,13 +7,17 @@ import Link from "next/link";
 
 export const ActiveLink = (props: { href: string; children: ReactNode }) => {
   const pathname = usePathname();
+  const active = pathname === props.href;
   return (
     <Link
       href={props.href}
       className={cn(
-        "px-4 py-2 rounded-[18px] whitespace-nowrap flex items-center gap-2 text-sm transition-all",
-        pathname === props.href && "bg-primary text-primary-foreground",
+        "flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2.5 text-sm transition-all duration-300",
+        active
+          ? "border-primary/65 bg-primary/95 text-primary-foreground shadow-[0_14px_28px_oklch(var(--primary)/0.24)]"
+          : "border-border/65 bg-background/55 text-[var(--sori-text-secondary)] hover:-translate-y-0.5 hover:border-primary/30 hover:bg-secondary/70 hover:text-foreground",
       )}
+      data-active={active}
     >
       {props.children}
     </Link>

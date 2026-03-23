@@ -92,17 +92,17 @@ export default function ConceptsPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto flex flex-col gap-6">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Link href="/admin" className="hover:underline">
+          <div className="mb-1 flex items-center gap-2 text-sm text-[var(--sori-text-secondary)]">
+            <Link href="/admin" className="sori-link-underline">
               Admin
             </Link>
             <span>/</span>
             <span>Concepts</span>
           </div>
-          <h1 className="text-2xl font-bold">Concept Management</h1>
+          <h1 className="sori-title text-3xl">Concept Management</h1>
         </div>
         <Button onClick={() => setShowCreateForm(!showCreateForm)}>
           {showCreateForm ? "Cancel" : "New Concept"}
@@ -113,7 +113,7 @@ export default function ConceptsPage() {
       {showCreateForm && (
         <form
           onSubmit={handleCreate}
-          className="rounded-lg border border-input p-6 flex flex-col gap-4"
+          className="sori-panel flex flex-col gap-4 rounded-lg p-6"
         >
           <h2 className="font-semibold">Create New Concept</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -131,7 +131,7 @@ export default function ConceptsPage() {
               <select
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-10 w-full rounded-xl border border-border bg-background/75 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <option value="proposed">Proposed</option>
                 <option value="under_review">Under Review</option>
@@ -194,33 +194,33 @@ export default function ConceptsPage() {
       </div>
 
       {/* Concept list */}
-      <div className="rounded-lg border border-input divide-y divide-input">
+      <div className="sori-panel divide-y divide-border rounded-lg">
         {loading ? (
-          <div className="p-6 text-sm text-muted-foreground text-center">
+          <div className="p-6 text-center text-sm text-[var(--sori-text-secondary)]">
             Loading concepts...
           </div>
         ) : concepts.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground text-center">
+          <div className="p-6 text-center text-sm text-[var(--sori-text-secondary)]">
             No concepts found. Create one above or adjust your filters.
           </div>
         ) : (
           concepts.map((concept) => (
             <div
               key={concept.id}
-              className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-accent/30 transition-colors"
+              className="flex flex-col justify-between gap-2 p-4 transition-colors hover:bg-secondary/50 md:flex-row md:items-center"
             >
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium">{concept.name}</span>
-                <span className="text-muted-foreground text-xs line-clamp-1">
+                <span className="line-clamp-1 text-xs text-[var(--sori-text-secondary)]">
                   {concept.description}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs shrink-0">
                 <StatusBadge status={concept.status} />
-                <span className="text-muted-foreground">
+                <span className="text-[var(--sori-text-secondary)]">
                   depth: {concept.depth_score}
                 </span>
-                <span className="text-muted-foreground">
+                <span className="text-[var(--sori-text-secondary)]">
                   conf: {(concept.confidence * 100).toFixed(0)}%
                 </span>
               </div>
@@ -234,13 +234,10 @@ export default function ConceptsPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    proposed: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-    under_review:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300",
-    pending_consensus:
-      "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
-    canonized:
-      "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+    proposed: "bg-[hsl(205_75%_90%)] text-[hsl(207_58%_28%)]",
+    under_review: "bg-[hsl(43_80%_90%)] text-[hsl(38_68%_26%)]",
+    pending_consensus: "bg-[hsl(22_90%_90%)] text-[hsl(18_64%_30%)]",
+    canonized: "bg-[hsl(142_55%_90%)] text-[hsl(145_48%_28%)]",
   };
   return (
     <span

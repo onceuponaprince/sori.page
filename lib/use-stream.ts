@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import type { AnalyzerResult } from "@/lib/analyzer-types";
 
 interface StreamState {
   text: string;
   metadata: Record<string, unknown> | null;
+  analysis: AnalyzerResult | null;
+  statusHistory: string[];
   loading: boolean;
   error: string;
   done: boolean;
@@ -22,6 +25,8 @@ export function useStream(endpoint: string) {
   const [state, setState] = useState<StreamState>({
     text: "",
     metadata: null,
+    analysis: null,
+    statusHistory: [],
     loading: false,
     error: "",
     done: false,
@@ -29,7 +34,15 @@ export function useStream(endpoint: string) {
 
   const generate = useCallback(
     async (params: Record<string, unknown>) => {
-      setState({ text: "", metadata: null, loading: true, error: "", done: false });
+      setState({
+        text: "",
+        metadata: null,
+        analysis: null,
+        statusHistory: [],
+        loading: true,
+        error: "",
+        done: false,
+      });
 
       try {
         const res = await fetch(endpoint, {
@@ -63,7 +76,8 @@ export function useStream(endpoint: string) {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // Parse SSE events from buffer
+          // Parse SSE incrementally so the hook works for both token-by-token
+          // prose streams and structured analyzer event streams.
           const lines = buffer.split("\n");
           buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
@@ -78,6 +92,15 @@ export function useStream(endpoint: string) {
               switch (event.type) {
                 case "metadata":
                   setState((s) => ({ ...s, metadata: event.metadata }));
+                  break;
+                case "status":
+                  setState((s) => ({
+                    ...s,
+                    statusHistory: [...s.statusHistory, event.status],
+                  }));
+                  break;
+                case "analysis":
+                  setState((s) => ({ ...s, analysis: event.analysis }));
                   break;
                 case "text":
                   setState((s) => ({ ...s, text: s.text + event.text }));
@@ -112,18 +135,25 @@ export function useStream(endpoint: string) {
     [endpoint],
   );
 
-  // Parse the streamed text into scene/profile and structural notes
+  // Legacy generation routes still return prose + notes in one stream separated
+  // by a marker. The analyzer path ignores these derived fields and uses
+  // `analysis` / `statusHistory` instead.
   const marker = "---STRUCTURAL_NOTES---";
   const markerIdx = state.text.indexOf(marker);
   const mainContent =
     markerIdx > -1 ? state.text.slice(0, markerIdx).trim() : state.text;
   const structuralNotes =
     markerIdx > -1 ? state.text.slice(markerIdx + marker.length).trim() : "";
+  const latestStatus =
+    state.statusHistory.length > 0
+      ? state.statusHistory[state.statusHistory.length - 1]
+      : "";
 
   return {
     ...state,
     mainContent,
     structuralNotes,
+    latestStatus,
     generate,
   };
 }

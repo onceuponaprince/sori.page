@@ -1,0 +1,75 @@
+# ── Product Context ──────────────────────────────────────────
+product_name: "sori.page"
+tagline: "Sori doesn't write for you, it writes with you. Now there are no more blockers."
+domain: "sori.page"
+product_type: "hybrid"
+# ── Problem & Audience ───────────────────────────────────────
+problem: "Every AI writing tool solves 'help me produce words faster.' Aspiring writers don't need faster words — they need confidence that their story is going somewhere. Writer's block is fear-based (not speed-based), imposter syndrome is rampant, and no tool addresses the emotional side of creative writing. Existing tools (Sudowrite, NovelCrafter, NovelAI) generate prose or organize files — none of them understand story structure deeply enough to validate a writer's instincts."
+audience_primary: "Aspiring writers working on their first novel, screenplay, or serious creative project — people with ideas who struggle to structure them and need validation that their creative instincts are sound"
+audience_secondary: "Writing teachers, screenwriting students, book clubs analyzing narrative structure, indie game writers building branching narratives"
+user_sophistication: "beginner"
+# ── Product Details ──────────────────────────────────────────
+core_features:
+  - "Story Structure Analyzer — paste an outline, get pattern identification, cross-genre connections, structural feedback, and confidence scoring via streaming AI analysis backed by a knowledge graph"
+  - "Semantic-experiential matching — connects stories by emotional/structural patterns across genres (your romance shares DNA with Blade Runner), not by metadata/tags/keywords"
+  - "Writing editor with structural sidebar — Tiptap/ProseMirror editor with real-time gentle suggestions showing where you are in your narrative arc and what similar stories do at this moment"
+  - "Story beat generator — relational beats (not flat lists) that explain WHY each beat connects to others, with cross-genre examples"
+  - "Discovery engine — recommend books, films, TV based on structural pattern similarity, not genre"
+  - "Community verification — writers contribute structural analyses to the knowledge graph, verified through consensus model (the moat)"
+monetization: "freemium"
+platform: "web"
+# ── Brand & Aesthetic ────────────────────────────────────────
+parent_brand: "Yurika"
+aesthetic_direction: "Cozy & playful — Notion meets indie game. 'The Writer's Treehouse.' Warm earth tones with magic accents. Interface feels like a magical notebook inside a Studio Ghibli cottage. Paper textures, ink-flow animations, organic shapes. Playful without being childish, organized without being clinical, alive without being distracting."
+mood_keywords:
+  - "cozy warmth"
+  - "creative confidence"
+  - "bookish magic"
+  - "indie game charm"
+  - "gentle encouragement"
+reference_products:
+  - "Notion (clean structure, information hierarchy)"
+  - "Stardew Valley (UI warmth, earthy palette, satisfying interactions)"
+  - "Bear app (typography focus, beautiful writing experience)"
+  - "Obsidian (graph view — knowledge connections visualized)"
+  - "Celeste (indie game pixel menus — charm without full pixel art)"
+# ── Technical Context ────────────────────────────────────────
+auth_strategy: "django+supabase"
+blockchain_networks: []
+has_existing_codebase: true
+existing_code_notes: "Repo exists on GitHub (not yet deployed). Frontend: Next.js App Router + shadcn/ui with Anthropic streaming SSE integration. Backend: Django + DRF with Neo4j knowledge graph (ConceptNode/FunctionNode/InstanceNode types), ingestion pipelines for TV Tropes/IMDB/Gutenberg data, character generators, story beat generators, depth/confidence scoring model, contributor consensus system, credit system, git-style versioning for story timelines. Frontend needs full visual redesign (currently shadcn defaults — no personality). Backend needs Structure Analyzer endpoint and RAG pipeline wiring. Frontend and backend are NOT yet connected in production."
+# ── Competitive Intel ────────────────────────────────────────
+competitive_intel: |
+  Source: web research, March 2026.
+
+  Market landscape: AI writing tools split into two categories — generators (Sudowrite, Squibler, NovelAI) that produce prose fast, and organizers (NovelCrafter, Life Note) that track story bibles. Nobody occupies the "structural understanding" space.
+
+  Sudowrite: Category leader for creative AI writing. Proprietary Muse model trained on fiction. Story Bible for consistency. Style-matching features. ~$19/mo. Strength: prose generation quality. Weakness: flat structure (no knowledge graph, no cross-genre matching). Positioning: "write 4x faster."
+
+  NovelCrafter: BYOK model, Codex system for character/location tracking, scene beats. ~$15/mo. Strength: organizational tools + model flexibility. Weakness: no structural intelligence. Positioning: "one workspace for everything."
+
+  NovelAI: Fine-tuned fiction models, lorebook feature, popular with fanfic community. Strength: prose style control. Weakness: linear writing only, no structure tools.
+
+  Life Note: Uses historical personas as writing partners. Niche positioning around "character depth."
+
+  Squibler: Full book generation from prompts. Templates + genres. Mass market. Weakness: no craft-level understanding.
+
+  Key market insight: 82% of writers worry about AI homogenizing style (Authors Guild 2024). Fear is valid when AI is used passively. sori.page's structure-first approach is the antidote — it doesn't generate prose, it helps writers understand why their story works.
+
+  Gap: NOBODY matches stories by structural/emotional patterns across genres. NOBODY has a knowledge graph of narrative structures built from TV Tropes + IMDB + Gutenberg. NOBODY addresses the emotional side (confidence, imposter syndrome, fear of failing). This is entirely unoccupied territory.
+# ── Constraints & Priorities ─────────────────────────────────
+launch_priority: "balanced"
+must_haves:
+  - "Landing page with 'Writer's Treehouse' design at sori.page"
+  - "Story Structure Analyzer — paste outline, get streaming AI analysis with cross-genre pattern matches"
+  - "At least 3 pre-built demo analyses for landing page (romance, thriller, literary fiction)"
+  - "Waitlist/signup"
+  - "Warm, cozy design that makes you want to write — NOT another gray SaaS template"
+  - "Mobile responsive"
+must_not_haves:
+  - "No prose generation — sori analyzes and suggests, never writes for you"
+  - "No quality scoring or 'publishability' ratings — validates, doesn't grade"
+  - "No prescriptive language — 'stories with this pattern tend to...' not 'you should...'"
+  - "No pure white backgrounds, pure black text, or cool grays — everything warm"
+  - "No generic AI aesthetics (Inter font, purple gradients, cookie-cutter layouts)"
+timeline: "Landing page + Structure Analyzer demo live within 2 weeks. Writing editor with structural sidebar within 4 weeks. Beat generator + discovery engine within 6 weeks."

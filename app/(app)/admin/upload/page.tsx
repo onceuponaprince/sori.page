@@ -88,17 +88,17 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto flex flex-col gap-6">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-          <Link href="/admin" className="hover:underline">
+        <div className="mb-1 flex items-center gap-2 text-sm text-[var(--sori-text-secondary)]">
+          <Link href="/admin" className="sori-link-underline">
             Admin
           </Link>
           <span>/</span>
           <span>Upload</span>
         </div>
-        <h1 className="text-2xl font-bold">Upload Script / Document</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <h1 className="sori-title text-3xl">Upload Script / Document</h1>
+        <p className="mt-1 text-sm text-[var(--sori-text-secondary)]">
           Paste a script or story text to create SourceNode and InstanceNodes in
           the knowledge graph.
         </p>
@@ -109,8 +109,8 @@ export default function UploadPage() {
         <div
           className={`rounded-md border px-4 py-3 text-sm ${
             result.success
-              ? "border-green-300 bg-green-50 text-green-800 dark:bg-green-950/20 dark:text-green-200"
-              : "border-red-300 bg-red-50 text-red-800 dark:bg-red-950/20 dark:text-red-200"
+              ? "border-green-300 bg-green-50 text-green-800"
+              : "border-red-300 bg-red-50 text-red-800"
           }`}
         >
           {result.message}
@@ -118,7 +118,7 @@ export default function UploadPage() {
       )}
 
       {/* Form */}
-      <div className="rounded-lg border border-input p-6 flex flex-col gap-4">
+      <div className="sori-panel flex flex-col gap-4 rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">Title</label>
@@ -134,7 +134,7 @@ export default function UploadPage() {
             <select
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-10 w-full rounded-xl border border-border bg-background/75 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               {SOURCE_TYPES.map((st) => (
                 <option key={st.value} value={st.value}>
@@ -195,18 +195,18 @@ export default function UploadPage() {
             Preview: {preview.length} chunk{preview.length !== 1 ? "s" : ""}{" "}
             will be created
           </h2>
-          <div className="rounded-lg border border-input divide-y divide-input max-h-96 overflow-auto">
+          <div className="sori-panel max-h-96 overflow-auto divide-y divide-border rounded-lg">
             {preview.map((chunk) => (
               <div key={chunk.index} className="p-4 text-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-xs text-muted-foreground">
+                  <span className="text-xs font-medium text-[var(--sori-text-secondary)]">
                     Chunk {chunk.index + 1}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-[var(--sori-text-secondary)]">
                     {chunk.word_count} words
                   </span>
                 </div>
-                <p className="text-muted-foreground line-clamp-3">
+                <p className="line-clamp-3 text-[var(--sori-text-secondary)]">
                   {chunk.text}
                 </p>
               </div>

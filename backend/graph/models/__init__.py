@@ -8,7 +8,13 @@ from graph.models.knowledge import (
 )
 from graph.models.versioning import Commit, Branch
 from graph.models.contributors import ContributorNode
-from graph.models.story import StoryNode, SceneNode
+from graph.models.story import (
+    StoryNode,
+    SceneNode,
+    TemporalRel,
+    CharacterNode,
+    StoryFactNode,
+)
 
 __all__ = [
     "ConceptNode",
@@ -22,4 +28,7 @@ __all__ = [
     "ContributorNode",
     "StoryNode",
     "SceneNode",
+    "TemporalRel",
+    "CharacterNode",
+    "StoryFactNode",
 ]

@@ -47,10 +47,11 @@ export default function CharactersPage() {
   const hasContent = mainContent.length > 0;
 
   return (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl p-6 md:p-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Character Generator</h1>
-        <p className="text-muted-foreground">
+        <p className="sori-kicker text-xs">generator</p>
+        <h1 className="sori-title mb-2 mt-2 text-3xl">Character Generator</h1>
+        <p className="text-[var(--sori-text-secondary)]">
           Create characters grounded in narrative archetypes. Optionally insert
           them into iconic template scenes to test how they work.
         </p>
@@ -58,7 +59,7 @@ export default function CharactersPage() {
 
       <div className="grid md:grid-cols-[380px,1fr] gap-8">
         {/* Controls */}
-        <div className="space-y-6">
+        <div className="sori-panel space-y-6 rounded-2xl p-5 md:p-6">
           <div>
             <label className="text-sm font-medium mb-2 block">
               Character Archetype
@@ -73,8 +74,8 @@ export default function CharactersPage() {
                   }}
                   className={`w-full px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
                     archetypeId === arch.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted border-input"
+                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
+                      : "bg-background/70 hover:bg-secondary border-border"
                   }`}
                 >
                   <span className="font-medium">{arch.name}</span>
@@ -98,8 +99,8 @@ export default function CharactersPage() {
                   }}
                   className={`px-3 py-2 rounded-lg text-sm text-left transition-all border ${
                     genre === g.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted border-input"
+                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
+                      : "bg-background/70 hover:bg-secondary border-border"
                   }`}
                 >
                   {g.name}
@@ -123,8 +124,8 @@ export default function CharactersPage() {
                     }
                     className={`w-full px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
                       sceneId === scene.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background hover:bg-muted border-input"
+                        ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
+                        : "bg-background/70 hover:bg-secondary border-border"
                     }`}
                   >
                     <span className="font-medium">{scene.scene_name}</span>
@@ -163,18 +164,18 @@ export default function CharactersPage() {
         {/* Output — streams in real time */}
         <div className="space-y-6">
           {error && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-4 text-sm">
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
               {error}
             </div>
           )}
 
           {hasContent && (
             <>
-              <div className="border rounded-xl p-6">
+              <div className="sori-panel rounded-xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="font-semibold text-lg">Character Profile</h2>
                   {selectedArchetype && (
-                    <span className="text-xs bg-muted px-2 py-1 rounded-md">
+                    <span className="sori-chip rounded-md px-2 py-1 text-xs">
                       {selectedArchetype.name}
                     </span>
                   )}
@@ -191,7 +192,7 @@ export default function CharactersPage() {
               </div>
 
               {structuralNotes && (
-                <div className="border border-dashed rounded-xl p-6 bg-muted/30">
+                <div className="rounded-xl border border-dashed border-border p-6 bg-secondary/45">
                   <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
                     Structural Notes
                   </h3>
@@ -203,7 +204,7 @@ export default function CharactersPage() {
               )}
 
               {metadata && (
-                <div className="border rounded-xl p-4">
+                <div className="sori-panel rounded-xl p-4">
                   <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
                     Concepts Used
                   </h3>
@@ -212,7 +213,7 @@ export default function CharactersPage() {
                       (concept, i) => (
                         <span
                           key={i}
-                          className="text-xs bg-muted px-2 py-1 rounded-md"
+                          className="sori-chip rounded-md px-2 py-1 text-xs"
                         >
                           {concept.replace(/_/g, " ")}
                         </span>
@@ -225,7 +226,7 @@ export default function CharactersPage() {
           )}
 
           {!hasContent && !loading && !error && (
-            <div className="flex items-center justify-center h-64 text-muted-foreground border border-dashed rounded-xl">
+            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border text-[var(--sori-text-secondary)]">
               <p className="text-center max-w-xs">
                 Select an archetype and genre. Optionally choose a template
                 scene to see your character in action.
