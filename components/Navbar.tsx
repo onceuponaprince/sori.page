@@ -11,11 +11,12 @@ export const ActiveLink = (props: { href: string; children: ReactNode }) => {
   return (
     <Link
       href={props.href}
+      style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", letterSpacing: "0.04em" }}
       className={cn(
-        "flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2.5 text-sm transition-all duration-300",
+        "flex items-center gap-2 whitespace-nowrap border px-4 py-2 text-sm transition-colors",
         active
-          ? "border-primary/65 bg-primary/95 text-primary-foreground shadow-[0_14px_28px_oklch(var(--primary)/0.24)]"
-          : "border-border/65 bg-background/55 text-[var(--sori-text-secondary)] hover:-translate-y-0.5 hover:border-primary/30 hover:bg-secondary/70 hover:text-foreground",
+          ? "border-foreground bg-foreground text-background"
+          : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
       )}
       data-active={active}
     >

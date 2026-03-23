@@ -1,22 +1,16 @@
 import "./globals.css";
-import { Fraunces, IBM_Plex_Mono, Lora } from "next/font/google";
+import { Playfair_Display, DM_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-const fraunces = Fraunces({
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-playfair-display",
 });
 
-const lora = Lora({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-lora",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  variable: "--font-ibm-plex-mono",
-  weight: "400",
+  variable: "--font-dm-sans",
 });
 
 export const metadata = {
@@ -33,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${fraunces.variable} ${lora.variable} ${ibmPlexMono.variable}`}
+        className={`${playfairDisplay.variable} ${dmSans.variable}`}
       >
         <NuqsAdapter>
           {children}

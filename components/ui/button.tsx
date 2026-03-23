@@ -5,26 +5,26 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/utils/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-xs font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "border border-primary/80 bg-primary text-primary-foreground shadow-[0_12px_30px_oklch(var(--primary)/0.24)] hover:-translate-y-0.5 hover:bg-primary/92",
+          "border border-foreground bg-foreground text-background hover:bg-transparent hover:text-foreground",
         destructive:
-          "border border-destructive/70 bg-destructive text-destructive-foreground shadow-[0_12px_24px_oklch(var(--destructive)/0.18)] hover:-translate-y-0.5 hover:bg-destructive/92",
+          "border border-destructive bg-destructive text-white hover:bg-transparent hover:text-destructive",
         outline:
-          "border border-border/90 bg-card/90 text-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.65)] hover:-translate-y-0.5 hover:bg-secondary/85",
+          "border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background",
         secondary:
-          "border border-border/80 bg-secondary/85 text-secondary-foreground hover:-translate-y-0.5 hover:bg-secondary",
+          "border border-border bg-secondary text-secondary-foreground hover:border-foreground",
         ghost:
-          "border border-transparent bg-transparent text-foreground hover:bg-secondary/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-transparent bg-transparent text-foreground hover:border-foreground",
+        link: "border-0 text-accent underline underline-offset-4 bg-transparent hover:text-foreground p-0 tracking-normal normal-case",
       },
       size: {
-        default: "h-11 px-5 py-2.5",
-        sm: "h-9 px-4 text-xs",
-        lg: "h-12 px-8 text-base",
+        default: "px-6 py-2.5",
+        sm: "px-4 py-1.5",
+        lg: "px-8 py-3.5",
         icon: "h-9 w-9",
       },
     },

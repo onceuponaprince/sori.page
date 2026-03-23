@@ -4,73 +4,61 @@
 
 @layer base {
   :root {
-    --background: 0.978 0.01 84;
-    --foreground: 0.282 0.03 42;
-    --card: 0.993 0.006 84;
-    --card-foreground: 0.282 0.03 42;
-    --popover: 0.995 0.004 82;
-    --popover-foreground: 0.282 0.03 42;
-    --primary: 0.68 0.158 33;
-    --primary-foreground: 0.985 0.004 78;
-    --secondary: 0.955 0.015 80;
-    --secondary-foreground: 0.45 0.03 48;
-    --muted: 0.944 0.01 84;
-    --muted-foreground: 0.57 0.025 55;
-    --accent: 0.925 0.03 78;
-    --accent-foreground: 0.34 0.04 38;
-    --destructive: 0.62 0.185 26;
-    --destructive-foreground: 0.985 0.004 78;
-    --border: 0.885 0.018 78;
-    --input: 0.885 0.018 78;
-    --ring: 0.68 0.158 33;
-    --radius: 1.1rem;
+    --background: #FAF8F5;
+    --foreground: #1C1A18;
+    --card: #FFFFFF;
+    --card-foreground: #1C1A18;
+    --popover: #FFFFFF;
+    --popover-foreground: #1C1A18;
+    --primary: #1C1A18;
+    --primary-foreground: #FAF8F5;
+    --secondary: #F0EDE8;
+    --secondary-foreground: #1C1A18;
+    --muted: #EDE9E3;
+    --muted-foreground: #8A857E;
+    --accent: #C8635A;
+    --accent-foreground: #FFFFFF;
+    --destructive: #C8635A;
+    --destructive-foreground: #ffffff;
+    --border: rgba(28, 26, 24, 0.12);
+    --input: transparent;
+    --input-background: #F0EDE8;
+    --ring: #C8635A;
+    --radius: 0px;
 
-    --font-display: var(--font-fraunces);
-    --font-body: var(--font-lora);
-    --font-ui: var(--font-lora);
-    --font-mono: var(--font-ibm-plex-mono);
+    --font-display: var(--font-playfair-display);
+    --font-body: var(--font-dm-sans);
+    --font-ui: var(--font-dm-sans);
 
-    --sori-bg-primary: oklch(var(--background));
-    --sori-bg-secondary: oklch(var(--secondary));
-    --sori-bg-surface: oklch(var(--card));
-    --sori-text-primary: oklch(var(--foreground));
-    --sori-text-secondary: oklch(var(--secondary-foreground));
-    --sori-text-muted: oklch(var(--muted-foreground));
-    --sori-border: oklch(var(--border));
-    --sori-accent-coral: oklch(var(--primary));
-    --sori-accent-sage: oklch(0.77 0.07 146);
-    --sori-accent-lavender: oklch(0.76 0.08 314);
-    --sori-accent-amber: oklch(0.82 0.1 78);
-    --sori-accent-sky: oklch(0.76 0.07 228);
-    --sori-shadow: 0.4 0.02 46;
-    --sori-paper-shadow:
-      0 22px 70px oklch(var(--sori-shadow) / 0.11),
-      0 2px 10px oklch(var(--sori-shadow) / 0.08),
-      inset 0 1px 0 oklch(1 0 0 / 0.7);
-    --sori-transition-quick: 220ms cubic-bezier(0.22, 1, 0.36, 1);
-    --sori-transition: 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    --sori-text-primary: #1C1A18;
+    --sori-text-secondary: #4A4845;
+    --sori-text-muted: #8A857E;
+    --sori-border: rgba(28, 26, 24, 0.12);
+    --sori-accent-coral: #C8635A;
+    --sori-bg-surface: #FFFFFF;
+    --sori-bg-secondary: #F0EDE8;
   }
 
   .dark {
-    --background: 0.22 0.02 50;
-    --foreground: 0.94 0.01 84;
-    --card: 0.25 0.02 50;
-    --card-foreground: 0.94 0.01 84;
-    --popover: 0.27 0.02 50;
-    --popover-foreground: 0.94 0.01 84;
-    --primary: 0.75 0.135 36;
-    --primary-foreground: 0.22 0.02 50;
-    --secondary: 0.3 0.016 50;
-    --secondary-foreground: 0.82 0.015 76;
-    --muted: 0.28 0.012 54;
-    --muted-foreground: 0.68 0.015 70;
-    --accent: 0.31 0.022 55;
-    --accent-foreground: 0.9 0.01 82;
-    --destructive: 0.66 0.17 26;
-    --destructive-foreground: 0.96 0.01 82;
-    --border: 0.34 0.015 52;
-    --input: 0.34 0.015 52;
-    --ring: 0.75 0.135 36;
+    --background: #1C1A18;
+    --foreground: #FAF8F5;
+    --card: #1C1A18;
+    --card-foreground: #FAF8F5;
+    --popover: #1C1A18;
+    --popover-foreground: #FAF8F5;
+    --primary: #FAF8F5;
+    --primary-foreground: #1C1A18;
+    --secondary: #2A2826;
+    --secondary-foreground: #FAF8F5;
+    --muted: #2A2826;
+    --muted-foreground: #8A857E;
+    --accent: #2A2826;
+    --accent-foreground: #FAF8F5;
+    --destructive: #C8635A;
+    --destructive-foreground: #FAF8F5;
+    --border: rgba(250, 248, 245, 0.12);
+    --input: rgba(250, 248, 245, 0.12);
+    --ring: #C8635A;
   }
 
   * {
@@ -84,31 +72,11 @@
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    background-image:
-      radial-gradient(circle at top left, oklch(var(--primary) / 0.12), transparent 28%),
-      radial-gradient(circle at bottom right, oklch(0.82 0.05 78 / 0.18), transparent 24%),
-      linear-gradient(180deg, oklch(var(--background)), oklch(0.965 0.012 82));
-    background-attachment: fixed;
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(oklch(var(--foreground) / 0.022) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(var(--foreground) / 0.018) 1px, transparent 1px),
-      radial-gradient(circle at 20% 20%, oklch(1 0 0 / 0.24) 0, transparent 42%);
-    background-size: 24px 24px, 24px 24px, 100% 100%;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.32));
-    opacity: 0.42;
-    z-index: -1;
   }
 
   ::selection {
-    background: oklch(var(--primary) / 0.18);
-    color: oklch(var(--foreground));
+    background: rgba(200, 99, 90, 0.18);
+    color: var(--foreground);
   }
 
   h1,
@@ -116,142 +84,96 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.03em;
-    text-wrap: balance;
+    font-weight: 500;
+    line-height: 1.2;
   }
+
+  h1 { line-height: 1.1; }
+  h2 { line-height: 1.3; }
+  h3 { line-height: 1.4; }
 
   p {
     font-family: var(--font-body);
     line-height: 1.7;
-    margin-block: 1.2em;
     max-width: 65ch;
   }
 
   label {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: oklch(var(--muted-foreground));
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
   }
 
   code {
-    font-family: var(--font-mono);
+    font-family: monospace;
+    font-size: 0.85em;
+    background: rgba(28, 26, 24, 0.06);
+    padding: 1px 4px;
   }
 }
 
 @layer components {
   .sori-shell {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid oklch(var(--border) / 0.95);
-    background:
-      linear-gradient(180deg, oklch(var(--card) / 0.94), oklch(var(--secondary) / 0.9));
-    box-shadow: var(--sori-paper-shadow);
-    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    background: var(--background);
   }
 
   .sori-paper {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid oklch(var(--border) / 0.9);
-    background:
-      linear-gradient(180deg, oklch(var(--card) / 0.97), oklch(var(--secondary) / 0.88));
-    box-shadow: var(--sori-paper-shadow);
+    border: 1px solid var(--border);
+    background: var(--card);
   }
 
-  .sori-paper::before,
-  .sori-panel::before,
-  .sori-editor-surface::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      radial-gradient(oklch(var(--foreground) / 0.035) 0.7px, transparent 0.7px),
-      radial-gradient(oklch(1 0 0 / 0.32) 0.8px, transparent 0.8px);
-    background-position: 0 0, 12px 12px;
-    background-size: 24px 24px;
-    opacity: 0.18;
+  .sori-panel {
+    border: 1px solid var(--border);
+    background: var(--card);
+    transition:
+      border-color 220ms ease,
+      transform 220ms ease;
+  }
+
+  .sori-panel:hover {
+    border-color: var(--foreground);
+  }
+
+  .sori-editor-surface {
+    border: 1px solid var(--border);
+    background: var(--card);
   }
 
   .sori-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 0.72rem;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: oklch(var(--secondary-foreground));
-    background: oklch(var(--secondary) / 0.85);
-    border: 1px solid oklch(var(--border) / 0.95);
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.55);
+    color: var(--sori-text-muted);
+    background: var(--secondary);
+    border: 1px solid var(--border);
   }
 
   .sori-title {
     font-family: var(--font-display);
-    font-weight: 700;
-    line-height: 0.98;
+    font-weight: 500;
+    line-height: 1.1;
   }
 
   .sori-kicker {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
+    font-size: 0.65rem;
     text-transform: uppercase;
-    color: oklch(var(--muted-foreground));
-    letter-spacing: 0.16em;
-  }
-
-  .sori-panel,
-  .sori-editor-surface {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid oklch(var(--border) / 0.8);
-    background:
-      linear-gradient(180deg, oklch(var(--card) / 0.92), oklch(var(--secondary) / 0.84));
-    transition:
-      border-color var(--sori-transition-quick),
-      transform var(--sori-transition-quick),
-      box-shadow var(--sori-transition-quick);
-    box-shadow:
-      0 18px 50px oklch(var(--sori-shadow) / 0.07),
-      inset 0 1px 0 oklch(1 0 0 / 0.6);
-  }
-
-  .sori-panel:hover {
-    border-color: oklch(var(--primary) / 0.24);
-    transform: translateY(-2px);
-    box-shadow:
-      0 24px 54px oklch(var(--sori-shadow) / 0.1),
-      inset 0 1px 0 oklch(1 0 0 / 0.65);
-  }
-
-  .sori-editor-surface {
-    background:
-      linear-gradient(180deg, oklch(0.995 0.004 82 / 0.98), oklch(var(--card) / 0.95));
+    color: var(--sori-text-muted);
+    letter-spacing: 0.18em;
   }
 
   .sori-link-underline {
     position: relative;
-    transition: color var(--sori-transition-quick);
+    transition: color 220ms ease;
   }
 
-  .sori-link-underline::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -3px;
-    width: 100%;
-    height: 1px;
-    background: oklch(var(--primary));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--sori-transition);
-  }
-
-  .sori-link-underline:hover::after,
-  .sori-link-underline[data-active="true"]::after {
-    transform: scaleX(1);
+  .sori-link-underline:hover {
+    color: var(--accent);
   }
 }
 
@@ -266,15 +188,10 @@
   }
 
   .text-sori-secondary {
-    color: oklch(var(--secondary-foreground));
+    color: var(--sori-text-secondary);
   }
 
   .border-sori-soft {
-    border-color: oklch(var(--border) / 0.68);
-  }
-
-  .bg-sori-glow {
-    background:
-      radial-gradient(circle, oklch(var(--primary) / 0.22), transparent 62%);
+    border-color: var(--border);
   }
 }

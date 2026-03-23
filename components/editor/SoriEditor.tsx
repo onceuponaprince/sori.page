@@ -40,7 +40,7 @@ function loadStoredDraft(): StoredDraft {
     return {
       storyUid: crypto.randomUUID(),
       sceneUid: crypto.randomUUID(),
-      title: "Untitled Treehouse Draft",
+      title: "Untitled Draft",
       outlineText: "",
       editorJson: createEmptyDocument(),
       analysis: null,
@@ -52,7 +52,7 @@ function loadStoredDraft(): StoredDraft {
     return {
       storyUid: crypto.randomUUID(),
       sceneUid: crypto.randomUUID(),
-      title: "Untitled Treehouse Draft",
+      title: "Untitled Draft",
       outlineText: "",
       editorJson: createEmptyDocument(),
       analysis: null,
@@ -64,7 +64,7 @@ function loadStoredDraft(): StoredDraft {
     return {
       storyUid: parsed.storyUid || crypto.randomUUID(),
       sceneUid: parsed.sceneUid || crypto.randomUUID(),
-      title: parsed.title || "Untitled Treehouse Draft",
+      title: parsed.title || "Untitled Draft",
       outlineText: parsed.outlineText || "",
       editorJson: parsed.editorJson || createEmptyDocument(parsed.outlineText || ""),
       analysis: parsed.analysis ?? null,
@@ -73,7 +73,7 @@ function loadStoredDraft(): StoredDraft {
     return {
       storyUid: crypto.randomUUID(),
       sceneUid: crypto.randomUUID(),
-      title: "Untitled Treehouse Draft",
+      title: "Untitled Draft",
       outlineText: "",
       editorJson: createEmptyDocument(),
       analysis: null,
@@ -92,11 +92,8 @@ export function SoriEditor() {
   const [savedLabel, setSavedLabel] = useState("Saved locally");
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
-
-  // ── Multiverse Sidebar state ──
-  // Controls visibility of the "Narrative Laboratory" panel.
-  // When open, the grid expands from 2 columns to 3.
   const [multiverseOpen, setMultiverseOpen] = useState(false);
+
   const {
     analysis,
     metadata,
@@ -163,8 +160,6 @@ export function SoriEditor() {
   }, []);
 
   useEffect(() => {
-    // Local storage is the fast, always-available recovery layer. The draft API
-    // below is the cross-session/server layer. Keeping both makes handoff safer.
     const snapshot: StoredDraft = {
       storyUid,
       sceneUid,
@@ -185,8 +180,6 @@ export function SoriEditor() {
     }
 
     const timeout = window.setTimeout(async () => {
-      // Save is intentionally debounced separately from analysis so a failed
-      // analyzer call never blocks persistence of the writer's work.
       setSavedLabel("Saving...");
       try {
         const response = await fetch("/api/drafts", {
@@ -207,7 +200,7 @@ export function SoriEditor() {
           throw new Error("Draft save failed");
         }
 
-        setSavedLabel("Saved to treehouse");
+        setSavedLabel("Saved");
       } catch {
         setSavedLabel("Saved locally");
       }
@@ -222,8 +215,6 @@ export function SoriEditor() {
     }
 
     const timeout = window.setTimeout(() => {
-      // Avoid re-analyzing the exact same text snapshot while a previous request
-      // is still in flight. This keeps the sidebar responsive without thrashing.
       if (loading || lastAnalyzedRef.current === plainText) {
         return;
       }
@@ -241,14 +232,14 @@ export function SoriEditor() {
 
   if (!mounted) {
     return (
-      <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr),360px,380px]" : "xl:grid-cols-[minmax(0,1fr),360px]"}`}>
-        <section className="sori-paper rounded-[1.75rem] p-6">
-          <div className="h-[72dvh] rounded-[1.5rem] border border-border/60 bg-background/35" />
+      <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
+        <section className="border border-border bg-card p-6">
+          <div className="h-[72dvh] border border-border" />
         </section>
         <aside className="space-y-4">
-          <div className="sori-paper rounded-[1.75rem] p-6">
-            <p className="text-sm text-[var(--sori-text-secondary)]">
-              Opening the treehouse...
+          <div className="border border-border bg-card p-6">
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }}>
+              Loading editor...
             </p>
           </div>
         </aside>
@@ -257,29 +248,30 @@ export function SoriEditor() {
   }
 
   return (
-    <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr),360px,380px]" : "xl:grid-cols-[minmax(0,1fr),360px]"}`}>
-      <section className="sori-paper rounded-[1.75rem] p-5 sm:p-6">
-        <div className="flex flex-col gap-4 border-b border-border/65 pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
+      <section className="border border-border bg-card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
-            <p className="sori-kicker text-xs">writer&apos;s treehouse</p>
+            <p className="sori-kicker">editor</p>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="max-w-xl text-lg"
+                className="max-w-xl"
                 placeholder="Name your draft"
               />
               <div className="flex flex-wrap gap-2">
-                <span className="sori-chip rounded-full px-3 py-1">
-                  story_uid {storyUid.slice(0, 8)}
+                <span className="sori-chip px-2.5 py-0.5">
+                  {storyUid.slice(0, 8)}
                 </span>
-                <span className="sori-chip rounded-full px-3 py-1">{savedLabel}</span>
+                <span className="sori-chip px-2.5 py-0.5">{savedLabel}</span>
               </div>
             </div>
           </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
+              size="sm"
               onClick={() =>
                 generate({
                   title,
@@ -289,26 +281,27 @@ export function SoriEditor() {
               }
               disabled={plainText.trim().length < 40 || loading}
             >
-              {loading ? "Reading structure..." : "Run analyzer"}
+              {loading ? "Reading..." : "Analyze"}
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setMultiverseOpen(!multiverseOpen)}
-              className={multiverseOpen ? "border-[var(--sori-accent-coral)]/40 bg-[var(--sori-accent-coral)]/5" : ""}
+              className={multiverseOpen ? "border-accent text-accent" : ""}
             >
-              {multiverseOpen ? "Close lab" : "Test plausibility"}
+              {multiverseOpen ? "Close Lab" : "Test"}
             </Button>
           </div>
         </div>
 
         <div className="mt-5">
-          <div className="sori-editor-surface rounded-[1.5rem] p-5 sm:p-7">
+          <div className="border border-border bg-card p-5 sm:p-7">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="m-0 text-sm text-[var(--sori-text-secondary)]">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }} className="m-0">
                 Draft freely. The sidebar will update when the story reveals a
                 structural pattern.
               </p>
-              <span className="text-xs uppercase tracking-[0.16em] text-[var(--sori-text-muted)]">
+              <span style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }}>
                 {plainText.trim().length} chars
               </span>
             </div>
@@ -325,10 +318,6 @@ export function SoriEditor() {
         error={error}
       />
 
-      {/* Multiverse Scene Tester — the "Narrative Laboratory" sidebar.
-          Opens as a third column when the writer clicks "Test plausibility".
-          Character IDs are hardcoded as an example — in production these
-          would come from the story's CharacterNode list in Neo4j. */}
       {multiverseOpen && (
         <MultiverseSidebar
           storyUid={storyUid}
@@ -368,20 +357,22 @@ function StructuralSidebar({
 
   return (
     <aside className="space-y-4">
-      <div className="sori-paper rounded-[1.75rem] p-5">
-        <p className="sori-kicker text-xs">live sidebar</p>
-        <h2 className="mt-3 text-3xl">Structural pulse</h2>
-        <p className="mt-3 text-sm text-[var(--sori-text-secondary)]">
+      <div className="border border-border bg-card p-5">
+        <p className="sori-kicker">live sidebar</p>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", fontWeight: 500 }} className="mt-3 text-foreground">
+          Structural pulse
+        </h2>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
           This pane stays focused on story logic, comparison, and knowledge flow.
           It never writes the scene for you.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="sori-chip rounded-full px-3 py-1">
+          <span className="sori-chip px-2.5 py-0.5">
             {loading ? readableStatus : analysis?.confidenceLabel || "Waiting for structure"}
           </span>
           {metadataCurrentArc && (
-            <span className="sori-chip rounded-full px-3 py-1">
+            <span className="sori-chip px-2.5 py-0.5">
               {metadataCurrentArc}
             </span>
           )}
@@ -389,30 +380,30 @@ function StructuralSidebar({
       </div>
 
       {error && (
-        <div className="rounded-[1.4rem] border border-destructive/35 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="border border-destructive/35 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {analysis ? (
         <>
-          {/* Keep the sidebar flat and inspectable during handoff: each block
-              mirrors a top-level field returned by the analyzer contract. */}
           <SidebarCard title="Summary" body={analysis.summary} />
           <SidebarCard title="Current Arc" body={analysis.currentArc} />
 
-          <div className="sori-panel rounded-[1.4rem] p-4">
-            <p className="sori-kicker text-xs">Pattern matches</p>
+          <div className="border border-border bg-card p-4">
+            <p className="sori-kicker">Pattern matches</p>
             <div className="mt-3 space-y-3">
               {analysis.patternMatches.map((match) => (
-                <div key={match.id} className="rounded-[1rem] border border-border/65 bg-background/45 p-3">
+                <div key={match.id} className="border border-border p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg">{match.label}</h3>
-                    <span className="text-xs text-[var(--sori-text-muted)]">
+                    <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: 500 }} className="text-foreground">
+                      {match.label}
+                    </h3>
+                    <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }}>
                       {Math.round(match.confidence * 100)}%
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--sori-text-secondary)]">
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-2">
                     {match.whyItFits}
                   </p>
                 </div>
@@ -420,18 +411,20 @@ function StructuralSidebar({
             </div>
           </div>
 
-          <div className="sori-panel rounded-[1.4rem] p-4">
-            <p className="sori-kicker text-xs">Stories like yours</p>
+          <div className="border border-border bg-card p-4">
+            <p className="sori-kicker">Stories like yours</p>
             <div className="mt-3 space-y-3">
               {analysis.crossGenreComparisons.map((story) => (
-                <div key={story.title} className="rounded-[1rem] border border-border/65 bg-background/45 p-3">
+                <div key={story.title} className="border border-border p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg">{story.title}</h3>
-                    <span className="text-xs uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+                    <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: 500 }} className="text-foreground">
+                      {story.title}
+                    </h3>
+                    <span style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }}>
                       {story.medium}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--sori-text-secondary)]">
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-2">
                     {story.resonance}
                   </p>
                 </div>
@@ -444,11 +437,11 @@ function StructuralSidebar({
             timelineWarnings={analysis.timelineWarnings}
           />
 
-          <div className="sori-panel rounded-[1.4rem] p-4">
-            <p className="sori-kicker text-xs">Gentle questions</p>
+          <div className="border border-border bg-card p-4">
+            <p className="sori-kicker">Gentle questions</p>
             <div className="mt-3 space-y-3">
               {analysis.gentleQuestions.map((question) => (
-                <div key={question.id} className="rounded-[1rem] border border-border/65 bg-background/45 p-3 text-sm text-[var(--sori-text-secondary)]">
+                <div key={question.id} className="border border-border p-3 text-sm" style={{ fontFamily: "var(--font-body)", color: "#4A4845" }}>
                   {question.prompt}
                 </div>
               ))}
@@ -456,9 +449,9 @@ function StructuralSidebar({
           </div>
         </>
       ) : (
-        <div className="sori-panel rounded-[1.4rem] p-5">
-          <p className="sori-kicker text-xs">first pass</p>
-          <p className="mt-3 text-sm text-[var(--sori-text-secondary)]">
+        <div className="border border-border bg-card p-5">
+          <p className="sori-kicker">first pass</p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
             Once your draft has enough shape, sori will surface likely pattern
             matches, similar stories, and questions about payoff and who knows
             what when.
@@ -471,9 +464,11 @@ function StructuralSidebar({
 
 function SidebarCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="sori-panel rounded-[1.4rem] p-4">
-      <p className="sori-kicker text-xs">{title}</p>
-      <p className="mt-3 text-sm text-[var(--sori-text-secondary)]">{body}</p>
+    <div className="border border-border bg-card p-4">
+      <p className="sori-kicker">{title}</p>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
+        {body}
+      </p>
     </div>
   );
 }
@@ -492,25 +487,25 @@ function KnowledgeFlowPanel({
       epistemicState.violations.length > 0);
 
   return (
-    <div className="sori-panel rounded-[1.4rem] p-4">
-      <p className="sori-kicker text-xs">Knowledge flow</p>
+    <div className="border border-border bg-card p-4">
+      <p className="sori-kicker">Knowledge flow</p>
 
       {hasEpistemic && (
         <>
           {epistemicState.characters.length > 0 && (
             <div className="mt-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }} className="mb-2 font-medium">
                 Characters
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {epistemicState.characters.map((char) => (
                   <span
                     key={char.name}
-                    className="sori-chip rounded-full px-2.5 py-0.5 text-xs"
+                    className="sori-chip px-2.5 py-0.5 text-xs"
                   >
                     {char.name}
                     {char.roleHint && (
-                      <span className="ml-1 text-[var(--sori-text-muted)]">
+                      <span style={{ color: "#8A857E" }} className="ml-1">
                         ({char.roleHint})
                       </span>
                     )}
@@ -522,19 +517,19 @@ function KnowledgeFlowPanel({
 
           {epistemicState.facts.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }} className="mb-2 font-medium">
                 Story facts
               </p>
               <div className="space-y-2">
                 {epistemicState.facts.map((fact, idx) => (
                   <div
                     key={`${fact.description.slice(0, 20)}-${idx}`}
-                    className="rounded-[0.85rem] border border-border/55 bg-background/35 p-2.5 text-xs"
+                    className="border border-border p-2.5 text-xs"
                   >
-                    <p className="text-[var(--sori-text-secondary)]">
+                    <p style={{ color: "#4A4845" }}>
                       {fact.description}
                     </p>
-                    <p className="mt-1 text-[var(--sori-text-muted)]">
+                    <p style={{ color: "#8A857E" }} className="mt-1">
                       Introduced at beat {fact.introducedAtBeat}
                       {fact.knownBy.length > 0 && (
                         <span>
@@ -553,20 +548,20 @@ function KnowledgeFlowPanel({
 
           {epistemicState.violations.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-destructive/80">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#C8635A" }} className="mb-2 font-medium">
                 Unearned knowledge
               </p>
               <div className="space-y-2">
                 {epistemicState.violations.map((v, idx) => (
                   <div
                     key={`${v.character}-${v.actsAtBeat}-${idx}`}
-                    className="rounded-[0.85rem] border border-destructive/30 bg-destructive/5 p-2.5 text-xs"
+                    className="border border-accent/30 bg-accent/5 p-2.5 text-xs"
                   >
-                    <p className="font-medium text-destructive">
+                    <p className="font-medium text-accent">
                       {v.character} acts on unearned knowledge at beat{" "}
                       {v.actsAtBeat}
                     </p>
-                    <p className="mt-1 text-[var(--sori-text-secondary)]">
+                    <p style={{ color: "#4A4845" }} className="mt-1">
                       &quot;{v.fact}&quot; — the outline does not show {v.character}{" "}
                       learning this before acting on it.
                     </p>
@@ -581,7 +576,7 @@ function KnowledgeFlowPanel({
       {timelineWarnings.length > 0 && (
         <div className={hasEpistemic ? "mt-4" : "mt-3"}>
           {hasEpistemic && (
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }} className="mb-2 font-medium">
               Additional checks
             </p>
           )}
@@ -589,15 +584,17 @@ function KnowledgeFlowPanel({
             {timelineWarnings.map((warning) => (
               <div
                 key={warning.label}
-                className="rounded-[0.85rem] border border-border/55 bg-background/35 p-2.5"
+                className="border border-border p-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm">{warning.label}</h3>
-                  <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+                  <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="text-foreground">
+                    {warning.label}
+                  </h3>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "0.6rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }}>
                     {warning.severity}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-[var(--sori-text-secondary)]">
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "0.72rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-1">
                   {warning.detail}
                 </p>
               </div>
@@ -607,7 +604,7 @@ function KnowledgeFlowPanel({
       )}
 
       {!hasEpistemic && timelineWarnings.length === 0 && (
-        <p className="mt-3 text-sm text-[var(--sori-text-secondary)]">
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
           The epistemic layer will map who knows what when once the outline
           includes clear information-transfer events.
         </p>

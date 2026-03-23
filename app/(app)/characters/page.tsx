@@ -49,19 +49,20 @@ export default function CharactersPage() {
   return (
     <div className="mx-auto max-w-6xl p-6 md:p-10">
       <div className="mb-8">
-        <p className="sori-kicker text-xs">generator</p>
-        <h1 className="sori-title mb-2 mt-2 text-3xl">Character Generator</h1>
-        <p className="text-[var(--sori-text-secondary)]">
+        <p className="sori-kicker">generator</p>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="mb-2 mt-2 text-foreground">
+          Character Generator
+        </h1>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }}>
           Create characters grounded in narrative archetypes. Optionally insert
           them into iconic template scenes to test how they work.
         </p>
       </div>
 
       <div className="grid md:grid-cols-[380px,1fr] gap-8">
-        {/* Controls */}
-        <div className="sori-panel space-y-6 rounded-2xl p-5 md:p-6">
+        <div className="border border-border bg-card space-y-6 p-5 md:p-6">
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">
               Character Archetype
             </label>
             <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
@@ -72,10 +73,11 @@ export default function CharactersPage() {
                     setArchetypeId(arch.id);
                     setSceneId("");
                   }}
-                  className={`w-full px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
+                  style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+                  className={`w-full px-3 py-2.5 text-left transition-colors border cursor-pointer ${
                     archetypeId === arch.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
-                      : "bg-background/70 hover:bg-secondary border-border"
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-transparent hover:border-foreground border-border"
                   }`}
                 >
                   <span className="font-medium">{arch.name}</span>
@@ -88,7 +90,7 @@ export default function CharactersPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Genre</label>
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">Genre</label>
             <div className="grid grid-cols-2 gap-2">
               {GENRES.map((g) => (
                 <button
@@ -97,10 +99,11 @@ export default function CharactersPage() {
                     setGenre(g.id);
                     setSceneId("");
                   }}
-                  className={`px-3 py-2 rounded-lg text-sm text-left transition-all border ${
+                  style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+                  className={`px-3 py-2 text-left transition-colors border cursor-pointer ${
                     genre === g.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
-                      : "bg-background/70 hover:bg-secondary border-border"
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-transparent hover:border-foreground border-border"
                   }`}
                 >
                   {g.name}
@@ -111,7 +114,7 @@ export default function CharactersPage() {
 
           {availableScenes.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-2 block">
+              <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">
                 Insert into Scene{" "}
                 <span className="text-muted-foreground">(optional)</span>
               </label>
@@ -122,10 +125,11 @@ export default function CharactersPage() {
                     onClick={() =>
                       setSceneId(sceneId === scene.id ? "" : scene.id)
                     }
-                    className={`w-full px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
+                    style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+                    className={`w-full px-3 py-2.5 text-left transition-colors border cursor-pointer ${
                       sceneId === scene.id
-                        ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
-                        : "bg-background/70 hover:bg-secondary border-border"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent hover:border-foreground border-border"
                     }`}
                   >
                     <span className="font-medium">{scene.scene_name}</span>
@@ -139,7 +143,7 @@ export default function CharactersPage() {
           )}
 
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">
               Custom Traits{" "}
               <span className="text-muted-foreground">(optional)</span>
             </label>
@@ -161,21 +165,22 @@ export default function CharactersPage() {
           </Button>
         </div>
 
-        {/* Output — streams in real time */}
         <div className="space-y-6">
           {error && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+            <div className="border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
               {error}
             </div>
           )}
 
           {hasContent && (
             <>
-              <div className="sori-panel rounded-xl p-6">
+              <div className="border border-border bg-card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="font-semibold text-lg">Character Profile</h2>
+                  <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="text-foreground">
+                    Character Profile
+                  </h2>
                   {selectedArchetype && (
-                    <span className="sori-chip rounded-md px-2 py-1 text-xs">
+                    <span className="sori-chip px-2 py-1 text-xs">
                       {selectedArchetype.name}
                     </span>
                   )}
@@ -192,8 +197,8 @@ export default function CharactersPage() {
               </div>
 
               {structuralNotes && (
-                <div className="rounded-xl border border-dashed border-border p-6 bg-secondary/45">
-                  <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+                <div className="border border-dashed border-border bg-secondary/45 p-6">
+                  <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 500 }} className="mb-3 text-muted-foreground">
                     Structural Notes
                   </h3>
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
@@ -204,8 +209,8 @@ export default function CharactersPage() {
               )}
 
               {metadata && (
-                <div className="sori-panel rounded-xl p-4">
-                  <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
+                <div className="border border-border bg-card p-4">
+                  <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 500 }} className="mb-2 text-muted-foreground">
                     Concepts Used
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -213,7 +218,7 @@ export default function CharactersPage() {
                       (concept, i) => (
                         <span
                           key={i}
-                          className="sori-chip rounded-md px-2 py-1 text-xs"
+                          className="sori-chip px-2 py-1 text-xs"
                         >
                           {concept.replace(/_/g, " ")}
                         </span>
@@ -226,8 +231,8 @@ export default function CharactersPage() {
           )}
 
           {!hasContent && !loading && !error && (
-            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border text-[var(--sori-text-secondary)]">
-              <p className="text-center max-w-xs">
+            <div className="flex h-64 items-center justify-center border border-dashed border-border">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E" }} className="text-center max-w-xs">
                 Select an archetype and genre. Optionally choose a template
                 scene to see your character in action.
               </p>

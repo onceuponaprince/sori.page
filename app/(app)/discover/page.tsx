@@ -30,9 +30,11 @@ export default function DiscoverPage() {
     <div className="mx-auto max-w-7xl p-6 md:p-10">
       <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="sori-kicker text-xs">discovery engine</p>
-          <h1 className="sori-title mt-2 text-4xl">Stories Like Yours</h1>
-          <p className="mt-3 max-w-2xl text-[var(--sori-text-secondary)]">
+          <p className="sori-kicker">discovery engine</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.4rem, 3vw, 2rem)", fontWeight: 500 }} className="mt-2 text-foreground">
+            Stories Like Yours
+          </h1>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3 max-w-2xl">
             Structural matching across genres. Compare your outline to stories
             that share emotional logic, payoff shape, or moral pressure instead
             of just tags and metadata.
@@ -48,34 +50,36 @@ export default function DiscoverPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[360px,minmax(0,1fr)]">
-        <section className="sori-paper rounded-[1.75rem] p-5">
-          <p className="sori-kicker text-xs">demo library</p>
+        <section className="border border-border bg-card p-5">
+          <p className="sori-kicker">demo library</p>
           <div className="mt-4 space-y-3">
             {ANALYZER_DEMOS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setSelectedDemoId(item.id)}
-                className={`w-full rounded-[1.25rem] border p-4 text-left transition-all ${
+                className={`w-full border p-4 text-left transition-colors cursor-pointer ${
                   selectedDemoId === item.id
-                    ? "border-primary/60 bg-primary/95 text-primary-foreground shadow-[0_16px_28px_oklch(var(--primary)/0.2)]"
-                    : "border-border/70 bg-background/50 hover:border-primary/30 hover:bg-secondary/55"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border hover:border-foreground"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg">{item.label}</h2>
-                  <span className="text-xs uppercase tracking-[0.16em] opacity-70">
+                  <h2 style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: 500 }}>
+                    {item.label}
+                  </h2>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase" }} className="opacity-70">
                     {item.genre}
                   </span>
                 </div>
-                <p className="mt-2 text-sm opacity-80">
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }} className="mt-2 opacity-80">
                   Use this as a structural comparison starting point.
                 </p>
               </button>
             ))}
           </div>
 
-          <div className="sori-editor-surface mt-5 rounded-[1.4rem] p-4">
-            <p className="sori-kicker text-xs">paste your own outline</p>
+          <div className="mt-5 border border-border p-4">
+            <p className="sori-kicker">paste your own outline</p>
             <Textarea
               value={outline}
               onChange={(event) => setOutline(event.target.value)}
@@ -87,24 +91,26 @@ export default function DiscoverPage() {
 
         <section className="space-y-5">
           {error && (
-            <div className="rounded-[1.3rem] border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <div className="border border-accent/30 bg-accent/10 p-4 text-sm text-accent">
               {error}
             </div>
           )}
 
           {analysis ? (
             <>
-              <div className="sori-paper rounded-[1.75rem] p-6">
+              <div className="border border-border bg-card p-6">
                 <div className="flex flex-wrap gap-2">
-                  <span className="sori-chip rounded-full px-3 py-1">
+                  <span className="sori-chip px-3 py-1">
                     {analysis.confidenceLabel}
                   </span>
-                  <span className="sori-chip rounded-full px-3 py-1">
+                  <span className="sori-chip px-3 py-1">
                     {analysis.currentArc}
                   </span>
                 </div>
-                <h2 className="mt-4 text-3xl">{analysis.title}</h2>
-                <p className="mt-3 text-[var(--sori-text-secondary)]">
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="mt-4 text-foreground">
+                  {analysis.title}
+                </h2>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
                   {analysis.summary}
                 </p>
               </div>
@@ -155,8 +161,8 @@ export default function DiscoverPage() {
               </div>
             </>
           ) : (
-            <div className="sori-paper rounded-[1.75rem] p-6">
-              <p className="text-[var(--sori-text-secondary)]">
+            <div className="border border-border bg-card p-6">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }}>
                 Choose a demo or paste an outline to see how the discovery engine
                 compares structural DNA across genres.
               </p>
@@ -176,27 +182,31 @@ function DiscoveryColumn({
   items: { title: string; meta: string; description: string; aside: string }[];
 }) {
   return (
-    <div className="sori-paper rounded-[1.65rem] p-5">
-      <p className="sori-kicker text-xs">{title}</p>
+    <div className="border border-border bg-card p-5">
+      <p className="sori-kicker">{title}</p>
       <div className="mt-4 space-y-3">
         {items.map((item, index) => (
           <div
             key={`${item.title}-${index}`}
-            className="rounded-[1.2rem] border border-border/65 bg-background/45 p-4"
+            className="border border-border p-4"
           >
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg">{item.title}</h3>
+              <h3 style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", fontWeight: 500 }} className="text-foreground">
+                {item.title}
+              </h3>
               {item.meta && (
-                <span className="text-xs uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }}>
                   {item.meta}
                 </span>
               )}
             </div>
-            <p className="mt-2 text-sm text-[var(--sori-text-secondary)]">
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-2">
               {item.description}
             </p>
             {item.aside && (
-              <p className="mt-2 text-xs text-[var(--sori-text-muted)]">{item.aside}</p>
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }} className="mt-2">
+                {item.aside}
+              </p>
             )}
           </div>
         ))}

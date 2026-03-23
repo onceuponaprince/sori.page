@@ -28,11 +28,11 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <div className="sori-panel flex flex-col gap-1 rounded-xl p-6 transition-transform hover:-translate-y-1">
-      <span className="text-3xl font-bold tabular-nums" style={{ fontFamily: "var(--font-display)" }}>
+    <div className="border border-border bg-card flex flex-col gap-1 p-6 transition-colors hover:border-foreground">
+      <span style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="tabular-nums text-foreground">
         {value}
       </span>
-      <span className="text-sm text-[var(--sori-text-secondary)]">{label}</span>
+      <span style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }}>{label}</span>
     </div>
   );
   if (href) return <Link href={href}>{content}</Link>;
@@ -69,21 +69,22 @@ export default function AdminDashboardPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
         <div>
-          <p className="sori-kicker text-xs">admin</p>
-          <h1 className="sori-title mt-2 text-3xl">Admin Dashboard</h1>
-          <p className="mt-1 text-sm text-[var(--sori-text-secondary)]">
+          <p className="sori-kicker">admin</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="mt-2 text-foreground">
+            Admin Dashboard
+          </h1>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }} className="mt-1">
             Manage the Neo4j knowledge graph
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+        <div className="border border-yellow-600/30 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           {error}
         </div>
       )}
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Concepts"
@@ -95,9 +96,8 @@ export default function AdminDashboardPage() {
         <StatCard label="Gaps" value={stats.total_gaps} href="/gaps" />
       </div>
 
-      {/* Quick actions */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="mb-3 text-foreground">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/admin/concepts">Manage Concepts</Link>
@@ -114,12 +114,11 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Recent activity placeholder */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Recent Activity</h2>
-        <div className="sori-panel divide-y divide-border rounded-lg">
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="mb-3 text-foreground">Recent Activity</h2>
+        <div className="border border-border bg-card divide-y divide-border">
           {loading ? (
-            <div className="p-4 text-sm text-[var(--sori-text-secondary)]">
+            <div className="p-4 text-sm" style={{ color: "#8A857E" }}>
               Loading...
             </div>
           ) : (
@@ -159,10 +158,10 @@ function ActivityRow({
   return (
     <div className="flex items-center justify-between px-4 py-3 text-sm">
       <div className="flex flex-col gap-0.5">
-        <span className="font-medium">{action}</span>
-        <span className="text-xs text-[var(--sori-text-secondary)]">{detail}</span>
+        <span style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{action}</span>
+        <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }}>{detail}</span>
       </div>
-      <span className="whitespace-nowrap text-xs text-[var(--sori-text-secondary)]">
+      <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }} className="whitespace-nowrap">
         {time}
       </span>
     </div>

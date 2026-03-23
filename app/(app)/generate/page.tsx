@@ -44,9 +44,11 @@ export default function GeneratePage() {
   return (
     <div className="mx-auto max-w-6xl p-6 md:p-10">
       <div className="mb-8">
-        <p className="sori-kicker text-xs">relational beat studio</p>
-        <h1 className="sori-title mb-2 mt-2 text-3xl">Relational Beat Tool</h1>
-        <p className="text-[var(--sori-text-secondary)]">
+        <p className="sori-kicker">relational beat studio</p>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="mb-2 mt-2 text-foreground">
+          Relational Beat Tool
+        </h1>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }}>
           Pick a genre and a structural moment. Instead of prose, you&apos;ll get
           the beat&apos;s function, the pressure it should create, and why it matters
           to the next movement of the story.
@@ -54,18 +56,19 @@ export default function GeneratePage() {
       </div>
 
       <div className="grid md:grid-cols-[380px,1fr] gap-8">
-        <div className="sori-panel space-y-6 rounded-2xl p-5 md:p-6">
+        <div className="border border-border bg-card space-y-6 p-5 md:p-6">
           <div>
-            <label className="text-sm font-medium mb-2 block">Genre</label>
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">Genre</label>
             <div className="grid grid-cols-2 gap-2">
               {GENRES.map((g) => (
                 <button
                   key={g.id}
                   onClick={() => setGenre(g.id)}
-                  className={`px-3 py-2 rounded-lg text-sm text-left transition-all border ${
+                  style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+                  className={`px-3 py-2 text-left transition-colors border cursor-pointer ${
                     genre === g.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
-                      : "bg-background/70 hover:bg-secondary border-border"
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-transparent hover:border-foreground border-border"
                   }`}
                 >
                   {g.name}
@@ -75,20 +78,21 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Story Beat</label>
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">Story Beat</label>
             <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
               {STORY_BEATS.map((beat) => (
                 <button
                   key={beat.id}
                   onClick={() => setBeatId(beat.id)}
-                  className={`w-full px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
+                  style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+                  className={`w-full px-3 py-2.5 text-left transition-colors border cursor-pointer ${
                     beatId === beat.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-[0_3px_0_hsl(14_55%_42%)]"
-                      : "bg-background/70 hover:bg-secondary border-border"
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-transparent hover:border-foreground border-border"
                   }`}
                 >
                   <span className="font-medium">{beat.name}</span>
-                  <span className="block text-xs opacity-70 mt-0.5">
+                  <span style={{ fontSize: "0.68rem" }} className="block opacity-70 mt-0.5">
                     {beat.act.replace("_", " ")}
                   </span>
                 </button>
@@ -97,7 +101,7 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }} className="mb-2 block">
               Your Story Context{" "}
               <span className="text-muted-foreground">(optional)</span>
             </label>
@@ -121,24 +125,26 @@ export default function GeneratePage() {
 
         <div className="space-y-6">
           {error && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+            <div className="border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
               {error}
             </div>
           )}
 
           {beatPlan && (
             <>
-              <div className="sori-paper rounded-[1.6rem] p-6">
+              <div className="border border-border bg-card p-6">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="sori-chip rounded-full px-3 py-1">
+                  <span className="sori-chip px-3 py-1">
                     {beatPlan.userLabel}
                   </span>
-                  <span className="sori-chip rounded-full px-3 py-1">
+                  <span className="sori-chip px-3 py-1">
                     {beatPlan.engineType}
                   </span>
                 </div>
-                <h2 className="mt-4 text-3xl">{beatPlan.beatName}</h2>
-                <p className="mt-3 text-[var(--sori-text-secondary)]">
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="mt-4 text-foreground">
+                  {beatPlan.beatName}
+                </h2>
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E", lineHeight: 1.7 }} className="mt-3">
                   {beatPlan.functionSummary}
                 </p>
               </div>
@@ -149,8 +155,8 @@ export default function GeneratePage() {
               </div>
 
               <div className="grid gap-5 lg:grid-cols-2">
-                <div className="sori-panel rounded-[1.4rem] p-5">
-                  <p className="sori-kicker text-xs">structural links</p>
+                <div className="border border-border bg-card p-5">
+                  <p className="sori-kicker">structural links</p>
                   <div className="mt-4 space-y-3">
                     <ChainItem
                       label="Before"
@@ -164,38 +170,42 @@ export default function GeneratePage() {
                   </div>
                 </div>
 
-                <div className="sori-panel rounded-[1.4rem] p-5">
-                  <p className="sori-kicker text-xs">cross-genre angle</p>
-                  <p className="mt-4 text-sm text-[var(--sori-text-secondary)]">
+                <div className="border border-border bg-card p-5">
+                  <p className="sori-kicker">cross-genre angle</p>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-4">
                     {beatPlan.crossGenreAngle}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-5 lg:grid-cols-2">
-                <div className="sori-panel rounded-[1.4rem] p-5">
-                  <p className="sori-kicker text-xs">tension questions</p>
+                <div className="border border-border bg-card p-5">
+                  <p className="sori-kicker">tension questions</p>
                   <div className="mt-4 space-y-3">
                     {beatPlan.tensionQuestions.map((question, index) => (
                       <div
                         key={`${question}-${index}`}
-                        className="rounded-[1rem] border border-border/65 bg-background/45 p-3 text-sm text-[var(--sori-text-secondary)]"
+                        className="border border-border p-3"
                       >
-                        {question}
+                        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#4A4845" }}>
+                          {question}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="sori-panel rounded-[1.4rem] p-5">
-                  <p className="sori-kicker text-xs">approach b translation</p>
+                <div className="border border-border bg-card p-5">
+                  <p className="sori-kicker">approach b translation</p>
                   <div className="mt-4 space-y-3">
                     {beatPlan.structuralSignals.map((signal, index) => (
                       <div
                         key={`${signal}-${index}`}
-                        className="rounded-[1rem] border border-border/65 bg-background/45 p-3 text-sm text-[var(--sori-text-secondary)]"
+                        className="border border-border p-3"
                       >
-                        {signal}
+                        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#4A4845" }}>
+                          {signal}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -203,10 +213,12 @@ export default function GeneratePage() {
               </div>
 
               {analysis && (
-                <div className="sori-paper rounded-[1.5rem] p-5">
-                  <p className="sori-kicker text-xs">linked analyzer context</p>
-                  <h3 className="mt-3 text-2xl">{analysis.currentArc}</h3>
-                  <p className="mt-3 text-sm text-[var(--sori-text-secondary)]">
+                <div className="border border-border bg-card p-5">
+                  <p className="sori-kicker">linked analyzer context</p>
+                  <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="mt-3 text-foreground">
+                    {analysis.currentArc}
+                  </h3>
+                  <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-3">
                     {analysis.summary}
                   </p>
                 </div>
@@ -215,8 +227,8 @@ export default function GeneratePage() {
           )}
 
           {!beatPlan && !loading && !error && (
-            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border text-[var(--sori-text-secondary)]">
-              <p className="text-center max-w-xs">
+            <div className="flex h-64 items-center justify-center border border-dashed border-border">
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "#8A857E" }} className="text-center max-w-xs">
                 Select a genre and structural beat. This tool will map why that
                 beat matters, what it should unlock next, and how to keep it tied
                 to your wider story logic.
@@ -231,20 +243,24 @@ export default function GeneratePage() {
 
 function BeatCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="sori-panel rounded-[1.4rem] p-5">
-      <p className="sori-kicker text-xs">{title}</p>
-      <p className="mt-4 text-sm text-[var(--sori-text-secondary)]">{body}</p>
+    <div className="border border-border bg-card p-5">
+      <p className="sori-kicker">{title}</p>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E", lineHeight: 1.6 }} className="mt-4">
+        {body}
+      </p>
     </div>
   );
 }
 
 function ChainItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1rem] border border-border/65 bg-background/45 p-3">
-      <p className="text-xs uppercase tracking-[0.14em] text-[var(--sori-text-muted)]">
+    <div className="border border-border p-3">
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A857E" }}>
         {label}
       </p>
-      <p className="mt-1 text-sm text-[var(--sori-text-secondary)]">{value}</p>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#4A4845" }} className="mt-1">
+        {value}
+      </p>
     </div>
   );
 }

@@ -35,7 +35,6 @@ export default function UploadPage() {
 
   function generatePreview() {
     if (!text.trim()) return;
-    // Split by double newlines (paragraphs/scenes)
     const chunks = text
       .split(/\n{2,}/)
       .map((t) => t.trim())
@@ -90,38 +89,38 @@ export default function UploadPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
       <div>
-        <div className="mb-1 flex items-center gap-2 text-sm text-[var(--sori-text-secondary)]">
-          <Link href="/admin" className="sori-link-underline">
+        <div className="mb-1 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }}>
+          <Link href="/admin" className="underline underline-offset-2 hover:text-foreground transition-colors">
             Admin
           </Link>
           <span>/</span>
           <span>Upload</span>
         </div>
-        <h1 className="sori-title text-3xl">Upload Script / Document</h1>
-        <p className="mt-1 text-sm text-[var(--sori-text-secondary)]">
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500 }} className="text-foreground">
+          Upload Script / Document
+        </h1>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }} className="mt-1">
           Paste a script or story text to create SourceNode and InstanceNodes in
           the knowledge graph.
         </p>
       </div>
 
-      {/* Result banner */}
       {result && (
         <div
-          className={`rounded-md border px-4 py-3 text-sm ${
+          className={`border px-4 py-3 text-sm ${
             result.success
-              ? "border-green-300 bg-green-50 text-green-800"
-              : "border-red-300 bg-red-50 text-red-800"
+              ? "border-foreground/30 bg-secondary text-foreground"
+              : "border-accent/30 bg-accent/10 text-accent"
           }`}
         >
           {result.message}
         </div>
       )}
 
-      {/* Form */}
-      <div className="sori-panel flex flex-col gap-4 rounded-lg p-6">
+      <div className="border border-border bg-card flex flex-col gap-4 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">Title</label>
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }}>Title</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -130,11 +129,12 @@ export default function UploadPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">Source Type</label>
+            <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }}>Source Type</label>
             <select
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value)}
-              className="flex h-10 w-full rounded-xl border border-border bg-background/75 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem" }}
+              className="flex h-10 w-full border border-border bg-transparent px-3 py-2 text-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35"
             >
               {SOURCE_TYPES.map((st) => (
                 <option key={st.value} value={st.value}>
@@ -146,7 +146,7 @@ export default function UploadPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Source URL (optional)</label>
+          <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }}>Source URL (optional)</label>
           <Input
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
@@ -156,7 +156,7 @@ export default function UploadPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Text Content</label>
+          <label style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", fontWeight: 500 }}>Text Content</label>
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -164,7 +164,7 @@ export default function UploadPage() {
             rows={12}
             required
           />
-          <span className="text-xs text-muted-foreground">
+          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem" }} className="text-muted-foreground">
             {text.split(/\s+/).filter(Boolean).length} words
           </span>
         </div>
@@ -188,25 +188,24 @@ export default function UploadPage() {
         </div>
       </div>
 
-      {/* Preview */}
       {preview && preview.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="mb-3 text-foreground">
             Preview: {preview.length} chunk{preview.length !== 1 ? "s" : ""}{" "}
             will be created
           </h2>
-          <div className="sori-panel max-h-96 overflow-auto divide-y divide-border rounded-lg">
+          <div className="border border-border bg-card max-h-96 overflow-auto divide-y divide-border">
             {preview.map((chunk) => (
               <div key={chunk.index} className="p-4 text-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-[var(--sori-text-secondary)]">
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", fontWeight: 500, color: "#8A857E" }}>
                     Chunk {chunk.index + 1}
                   </span>
-                  <span className="text-xs text-[var(--sori-text-secondary)]">
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }}>
                     {chunk.word_count} words
                   </span>
                 </div>
-                <p className="line-clamp-3 text-[var(--sori-text-secondary)]">
+                <p style={{ fontFamily: "var(--font-body)", fontSize: "0.78rem", color: "#8A857E" }} className="line-clamp-3">
                   {chunk.text}
                 </p>
               </div>
