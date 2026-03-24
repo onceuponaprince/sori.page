@@ -228,7 +228,7 @@ export function SoriEditor() {
     }, 1200);
 
     return () => window.clearTimeout(timeout);
-  }, [generate, loading, plainText, title]);
+  }, [generate, loading, plainText, title, storyUid]);
 
   if (!mounted) {
     return (

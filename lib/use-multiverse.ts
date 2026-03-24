@@ -306,7 +306,7 @@ function buildPathToNode(
   let safety = 0;
   while (currentId && safety < 100) {
     path.unshift(currentId);
-    const node = nodes[currentId];
+    const node: MultiverseNode | undefined = nodes[currentId];
     currentId = node?.parentNodeId ?? null;
     safety++;
   }
