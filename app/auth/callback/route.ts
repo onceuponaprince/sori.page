@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
  * OAuth callback handler.
@@ -9,14 +9,33 @@ import { createClient } from "@supabase/supabase-js";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const next = searchParams.get("next");
+  const redirectPath =
+    next && next.startsWith("/") && !next.startsWith("//") ? next : "/generate";
 
   if (code) {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-    await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const supabase = await createServerClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        throw error;
+      }
+    } catch {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("error", "auth_callback_failed");
+      if (next) {
+        loginUrl.searchParams.set("next", next);
+      }
+      return NextResponse.redirect(loginUrl);
+    }
+  } else {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("error", "missing_auth_code");
+    if (next) {
+      loginUrl.searchParams.set("next", next);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.redirect(new URL("/generate", req.url));
+  return NextResponse.redirect(new URL(redirectPath, req.url));
 }

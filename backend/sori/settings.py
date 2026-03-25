@@ -13,24 +13,15 @@ import socket
 from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 
+from sori.engine_boundary import FULL_BACKEND_APPS
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = ["*"]
 
-INSTALLED_APPS = [
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "rest_framework",
-    "corsheaders",
-    "graph",
-    "ingestion",
-    "retrieval",
-    "contributors",
-    "agent",
-]
+INSTALLED_APPS = list(FULL_BACKEND_APPS)
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

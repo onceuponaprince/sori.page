@@ -8,7 +8,7 @@ import type { JSONContent } from "@tiptap/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStream } from "@/lib/use-stream";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/supabase/client";
 import type { AnalyzerResult, EpistemicState } from "@/lib/analyzer-types";
 import { MultiverseSidebar } from "@/components/multiverse/MultiverseSidebar";
 

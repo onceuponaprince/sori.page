@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
     async function fetchStats() {
       try {
         const backendUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
         const res = await fetch(`${backendUrl}/api/backend/graph/stats/`);
         if (res.ok) {
           const data = await res.json();

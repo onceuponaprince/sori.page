@@ -5,14 +5,62 @@ import {
   GENRES,
   TEMPLATE_SCENES,
 } from "@/lib/narrative-concepts";
+import { reserveCredits, finalizeCreditReservation } from "@/lib/credits";
+import { requireRequestContext } from "@/lib/request-context";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { logAudit } from "@/lib/audit";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const anthropic = new Anthropic();
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  let operationKey: string | null = null;
+  let requestId: string | null = null;
   try {
-    const { archetype_id, genre, traits, scene_id, user_id } = await req.json();
+    const contextInfo = await requireRequestContext(req);
+    operationKey = `${contextInfo.idempotencyKey}:character`;
+    requestId = contextInfo.requestId;
+
+    const rate = checkRateLimit(
+      `character:${contextInfo.tenantId ?? "user"}:${contextInfo.tenantId ?? contextInfo.userId}`,
+    );
+    if (!rate.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded" }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rate.retryAfterSec),
+            "X-Request-Id": contextInfo.requestId,
+          },
+        },
+      );
+    }
+
+    const creditResult = await reserveCredits({
+      userId: contextInfo.userId,
+      tenantId: contextInfo.tenantId,
+      cost: 1,
+      operationKey,
+      reason: "character_generation",
+    });
+    if (!creditResult.allowed) {
+      return new Response(
+        JSON.stringify({ error: creditResult.error || "Not enough credits" }),
+        {
+          status: 402,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Request-Id": contextInfo.requestId,
+          },
+        },
+      );
+    }
+
+    const { archetype_id, genre, traits, scene_id } = await req.json();
 
     const selectedArchetype = CHARACTER_ARCHETYPES.find(
       (a) => a.id === archetype_id,
@@ -126,32 +174,65 @@ After the character profile, write them INTO this scene.`
             ),
           );
 
-          if (user_id) {
-            try {
-              const { createServerClient } = await import("@/lib/supabase");
-              const supabase = createServerClient();
-              await supabase.from("generations").insert({
-                user_id,
+          let generationId: number | null = null;
+          try {
+            const supabase = createAdminClient();
+            const { data: generationRow, error: generationError } = await supabase
+              .from("generations")
+              .insert({
+                user_id: contextInfo.userId,
                 generation_type: "character",
-                input_params: { archetype_id, genre, traits, scene_id },
+                input_params: {
+                  archetype_id,
+                  genre,
+                  traits,
+                  scene_id,
+                  tenant_id: contextInfo.tenantId,
+                },
                 output_text: profile,
                 structural_notes: notes,
                 metadata,
                 credits_used: 1,
-              });
-              await supabase.rpc("deduct_credits", {
-                p_user_id: user_id,
-                p_amount: 1,
-              });
-            } catch (e) {
-              console.error("Failed to save generation:", e);
+              })
+              .select("id")
+              .single();
+
+            if (generationError) {
+              throw generationError;
             }
+            generationId = generationRow?.id ?? null;
+            await finalizeCreditReservation({
+              operationKey: operationKey!,
+              success: true,
+              generationId,
+              requestId: contextInfo.requestId,
+            });
+            logAudit("character_generation_success", {
+              user_id: contextInfo.userId,
+              tenant_id: contextInfo.tenantId,
+              credits_delta: -1,
+              endpoint: "/api/generate/character",
+              request_id: contextInfo.requestId,
+            });
+          } catch (e) {
+            await finalizeCreditReservation({
+              operationKey: operationKey!,
+              success: false,
+              generationId,
+              requestId: contextInfo.requestId,
+            });
+            console.error("Failed to save generation:", e);
           }
 
           controller.close();
         });
 
         stream.on("error", (error) => {
+          void finalizeCreditReservation({
+            operationKey: operationKey!,
+            success: false,
+            requestId: contextInfo.requestId,
+          });
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: "error", error: String(error) })}\n\n`,
@@ -167,15 +248,42 @@ After the character profile, write them INTO this scene.`
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        "X-Request-Id": contextInfo.requestId,
       },
     });
   } catch (error) {
+    if (operationKey && requestId) {
+      try {
+        await finalizeCreditReservation({
+          operationKey,
+          success: false,
+          requestId,
+        });
+      } catch {
+        // Ignore cleanup errors.
+      }
+    }
     console.error("Character generation error:", error);
     return new Response(
       JSON.stringify({
-        error: "Generation failed. Check your ANTHROPIC_API_KEY.",
+        error:
+          error instanceof Error &&
+          (error.message === "Authentication required" ||
+            error.message === "Invalid auth token" ||
+            error.message === "Tenant access denied")
+            ? error.message
+            : "Generation failed. Check your ANTHROPIC_API_KEY.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      {
+        status:
+          error instanceof Error &&
+          (error.message === "Authentication required" ||
+            error.message === "Invalid auth token" ||
+            error.message === "Tenant access denied")
+            ? 401
+            : 500,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 }

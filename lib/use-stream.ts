@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { AnalyzerResult } from "@/lib/analyzer-types";
+import { createBrowserClient } from "@/lib/supabase/client";
 
 interface StreamState {
   text: string;
@@ -45,9 +46,26 @@ export function useStream(endpoint: string) {
       });
 
       try {
+        const supabase = createBrowserClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        const tenantId =
+          (sessionData.session?.user?.user_metadata?.tenant_id as string | undefined) ||
+          (sessionData.session?.user?.app_metadata?.tenant_id as string | undefined);
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (accessToken) {
+          headers.Authorization = `Bearer ${accessToken}`;
+        }
+        if (tenantId) {
+          headers["X-Tenant-Id"] = tenantId;
+        }
+
         const res = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(params),
         });
 

@@ -36,11 +36,11 @@
  */
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
+import { createContextEngineClient } from "@/packages/sdk-ts/src";
 import type {
   MultiverseState,
   MultiverseNode,
   ChoiceEdge,
-  ApiSimulateResponse,
   ApiBranchResponse,
   ApiCommitResponse,
   ChoiceIntent,
@@ -52,10 +52,18 @@ import type {
 
 /**
  * Base URL for the Django backend API.
- * Falls back to localhost:8000 in development.
+ * Falls back to localhost:8001 in development (context-engine service).
  */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const CONTEXT_ENGINE_API_KEY = process.env.NEXT_PUBLIC_CONTEXT_ENGINE_API_KEY;
+const CONTEXT_ENGINE_TENANT_ID = process.env.NEXT_PUBLIC_CONTEXT_ENGINE_TENANT_ID;
+
+const contextEngineClient = createContextEngineClient({
+  baseUrl: API_BASE,
+  apiKey: CONTEXT_ENGINE_API_KEY,
+  tenantId: CONTEXT_ENGINE_TENANT_ID,
+});
 
 /**
  * How often to poll for simulation completion (in milliseconds).
@@ -399,10 +407,7 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
 
     async function loadTree() {
       try {
-        const res = await fetch(`${API_BASE}/api/agent/multiverse/${storyUid}/`);
-        if (!res.ok) return;
-
-        const data = await res.json();
+        const data = await contextEngineClient.getMultiverseTree(storyUid);
         if (data.rootNodeId && Object.keys(data.nodes).length > 0) {
           dispatch({
             type: "INIT_TREE",
@@ -468,12 +473,7 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
         }
 
         try {
-          const res = await fetch(
-            `${API_BASE}/api/agent/simulate/${taskId}/status/`
-          );
-          if (!res.ok) return;
-
-          const data = await res.json();
+          const data = await contextEngineClient.getSimulationStatus(taskId);
 
           if (data.state === "SUCCESS" && data.data) {
             // Simulation complete — stop polling and update state.
@@ -531,26 +531,16 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
       dispatch({ type: "SIMULATION_START" });
 
       try {
-        const res = await fetch(`${API_BASE}/api/agent/simulate/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            story_uid: storyUid,
-            scene_goal: sceneGoal,
-            character_ids: characterIds,
-            state_snapshot_id: state.activeNodeId
-              ? state.nodes[state.activeNodeId]?.stateSnapshotId || null
-              : null,
-            parent_node_id: state.activeNodeId || null,
-          }),
+        const data = await contextEngineClient.startSimulation({
+          story_uid: storyUid,
+          scene_goal: sceneGoal,
+          character_ids: characterIds,
+          state_snapshot_id: state.activeNodeId
+            ? state.nodes[state.activeNodeId]?.stateSnapshotId || null
+            : null,
+          parent_node_id: state.activeNodeId || null,
         });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || `HTTP ${res.status}`);
-        }
-
-        const { taskId, nodeId } = await res.json();
+        const { taskId, nodeId } = data;
 
         // Start polling for the simulation result.
         startPolling(taskId, nodeId);
@@ -576,23 +566,12 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
       dispatch({ type: "BRANCH_START" });
 
       try {
-        const res = await fetch(`${API_BASE}/api/agent/branch/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            source_node_id: state.activeNodeId,
-            choice_label: choiceLabel,
-            intent,
-            state_snapshot_id: activeNode.stateSnapshotId,
-          }),
+        const data: ApiBranchResponse = await contextEngineClient.createBranch({
+          source_node_id: state.activeNodeId,
+          choice_label: choiceLabel,
+          intent,
+          state_snapshot_id: activeNode.stateSnapshotId,
         });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || `HTTP ${res.status}`);
-        }
-
-        const data: ApiBranchResponse = await res.json();
 
         dispatch({
           type: "BRANCH_COMPLETE",
@@ -617,21 +596,10 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
     if (!state.activeNodeId) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/agent/commit/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          node_id: state.activeNodeId,
-          story_uid: storyUid,
-        }),
+      const data: ApiCommitResponse = await contextEngineClient.commitBranch({
+        node_id: state.activeNodeId,
+        story_uid: storyUid,
       });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-
-      const data: ApiCommitResponse = await res.json();
 
       dispatch({
         type: "COMMIT_COMPLETE",

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireRequestContext } from "@/lib/request-context";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { fetchContextEngine } from "@/lib/context-engine-gateway";
 
 /**
  * Trope search API — queries the Django backend's Neo4j graph
@@ -10,17 +13,38 @@ import { NextRequest, NextResponse } from "next/server";
  * Usage: GET /api/tropes?q=mentor+death&limit=5
  */
 export async function GET(req: NextRequest) {
+  let tenantId: string | null = null;
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q") || "";
   const limit = parseInt(searchParams.get("limit") || "10");
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  try {
+    const context = await requireRequestContext(req);
+    tenantId = context.tenantId;
+    const rate = checkRateLimit(
+      `tropes:${context.tenantId ?? "user"}:${context.tenantId ?? context.userId}`,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rate.retryAfterSec) },
+        },
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Authentication required" },
+      { status: 401 },
+    );
+  }
 
   try {
-    // Try the Django backend first (connected to Neo4j)
-    const res = await fetch(
-      `${backendUrl}/api/graph/concepts/search/?q=${encodeURIComponent(query)}&limit=${limit}`,
-      { next: { revalidate: 60 } }, // Cache for 60 seconds
+    const res = await fetchContextEngine(
+      tenantId,
+      `/api/graph/concepts/search/?q=${encodeURIComponent(query)}&limit=${limit}`,
+      { cache: "force-cache" },
     );
 
     if (res.ok) {

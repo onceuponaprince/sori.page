@@ -1,9 +1,45 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import type { Provider } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { signInWithProvider } from "@/lib/auth";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const [loadingProvider, setLoadingProvider] = useState<Provider | null>(null);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) {
+      return;
+    }
+
+    if (error === "auth_callback_failed") {
+      toast.error("Could not complete sign in. Please try again.");
+      return;
+    }
+
+    if (error === "missing_auth_code") {
+      toast.error("Sign in was cancelled or expired. Please try again.");
+      return;
+    }
+
+    toast.error("Sign in failed. Please try again.");
+  }, [searchParams]);
+
+  async function handleProviderSignIn(provider: Provider) {
+    setLoadingProvider(provider);
+    try {
+      await signInWithProvider(provider);
+    } catch (error) {
+      setLoadingProvider(null);
+      toast.error(error instanceof Error ? error.message : "Sign in failed");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6">
@@ -23,23 +59,26 @@ export default function LoginPage() {
             <Button
               variant="outline"
               className="w-full py-3"
-              onClick={() => signInWithProvider("google")}
+              disabled={loadingProvider !== null}
+              onClick={() => handleProviderSignIn("google")}
             >
-              Continue with Google
+              {loadingProvider === "google" ? "Connecting to Google..." : "Continue with Google"}
             </Button>
             <Button
               variant="outline"
               className="w-full py-3"
-              onClick={() => signInWithProvider("github")}
+              disabled={loadingProvider !== null}
+              onClick={() => handleProviderSignIn("github")}
             >
-              Continue with GitHub
+              {loadingProvider === "github" ? "Connecting to GitHub..." : "Continue with GitHub"}
             </Button>
             <Button
               variant="outline"
               className="w-full py-3"
-              onClick={() => signInWithProvider("twitter")}
+              disabled={loadingProvider !== null}
+              onClick={() => handleProviderSignIn("twitter")}
             >
-              Continue with Twitter
+              {loadingProvider === "twitter" ? "Connecting to Twitter..." : "Continue with Twitter"}
             </Button>
           </div>
 

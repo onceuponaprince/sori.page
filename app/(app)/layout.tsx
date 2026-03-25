@@ -1,6 +1,5 @@
-"use client";
-
 import { ActiveLink } from "@/components/Navbar";
+import { UserMenu } from "@/components/UserMenu";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -24,11 +23,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <ActiveLink href="/admin">Admin</ActiveLink>
             </nav>
           </div>
-          <div className="hidden md:flex flex-col items-end gap-1">
-            <span className="sori-chip px-2.5 py-0.5">5 credits</span>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.65rem", color: "#8A857E" }} className="m-0 max-w-none">
-              Analyze structure. Keep your voice.
-            </p>
+          <div className="flex items-center">
+            <UserMenu />
           </div>
         </div>
       </header>

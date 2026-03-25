@@ -71,6 +71,34 @@ services:
         condition: service_started
     command: python manage.py runserver 0.0.0.0:8000
 
+  context-engine:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile.engine
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - WEAVIATE_URL=http://weaviate:8080
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=true
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ENGINE_INCLUDE_INGESTION=false
+      - ENGINE_REQUIRE_API_KEY=${ENGINE_REQUIRE_API_KEY}
+      - ENGINE_API_KEYS=${ENGINE_API_KEYS}
+      - ENGINE_ALLOWED_ORIGINS=${ENGINE_ALLOWED_ORIGINS}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      weaviate:
+        condition: service_started
+
 volumes:
   neo4j_data:
   neo4j_logs:
