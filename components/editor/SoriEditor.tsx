@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useStream } from "@/lib/use-stream";
 import { createBrowserClient } from "@/lib/supabase";
 import type { AnalyzerResult, EpistemicState } from "@/lib/analyzer-types";
+import { MultiverseLab } from "@/components/editor/MultiverseLab";
 
 const STORAGE_KEY = "sori-treehouse-draft-v1";
 
@@ -89,6 +90,8 @@ export function SoriEditor() {
   const [plainText, setPlainText] = useState(initialDraft.outlineText);
   const [editorJson, setEditorJson] = useState<JSONContent>(initialDraft.editorJson);
   const [savedLabel, setSavedLabel] = useState("Saved locally");
+  /** Pulse = structural analyzer; Multiverse = scene tester lab (PlayerView-style). */
+  const [sidebarTab, setSidebarTab] = useState<"pulse" | "multiverse">("pulse");
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
   const {
@@ -304,13 +307,43 @@ export function SoriEditor() {
         </div>
       </section>
 
-      <StructuralSidebar
-        analysis={analysis ?? initialDraft.analysis}
-        metadata={metadata}
-        latestStatus={latestStatus}
-        loading={loading}
-        error={error}
-      />
+      <aside className="space-y-4">
+        <div className="sori-bg-parchment sori-border-dotted flex rounded-[1.25rem] p-1">
+          <button
+            type="button"
+            onClick={() => setSidebarTab("pulse")}
+            className={`flex-1 rounded-[1rem] px-3 py-2 text-center font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              sidebarTab === "pulse"
+                ? "bg-background/90 text-foreground shadow-sm"
+                : "text-[var(--sori-text-muted)] hover:text-foreground"
+            }`}
+          >
+            Pulse
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("multiverse")}
+            className={`flex-1 rounded-[1rem] px-3 py-2 text-center font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              sidebarTab === "multiverse"
+                ? "bg-background/90 text-foreground shadow-sm"
+                : "text-[var(--sori-text-muted)] hover:text-foreground"
+            }`}
+          >
+            Multiverse
+          </button>
+        </div>
+        {sidebarTab === "pulse" ? (
+          <StructuralSidebar
+            analysis={analysis ?? initialDraft.analysis}
+            metadata={metadata}
+            latestStatus={latestStatus}
+            loading={loading}
+            error={error}
+          />
+        ) : (
+          <MultiverseLab />
+        )}
+      </aside>
     </div>
   );
 }
@@ -333,7 +366,7 @@ function StructuralSidebar({
     typeof metadata?.current_arc === "string" ? metadata.current_arc : "";
 
   return (
-    <aside className="space-y-4">
+    <>
       <div className="sori-paper rounded-[1.75rem] p-5">
         <p className="sori-kicker text-xs">live sidebar</p>
         <h2 className="mt-3 text-3xl">Structural pulse</h2>
@@ -431,7 +464,7 @@ function StructuralSidebar({
           </p>
         </div>
       )}
-    </aside>
+    </>
   );
 }
 
