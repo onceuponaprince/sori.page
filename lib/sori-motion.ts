@@ -7,6 +7,17 @@ export const soriMotion = {
       ease: [0.22, 1, 0.36, 1] as const,
     },
   },
+  /** Quick pop for tree nodes entering the Multiverse sidebar */
+  popIn: {
+    initial: { opacity: 0, scale: 0.94, y: 8 },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    transition: {
+      type: "spring" as const,
+      stiffness: 420,
+      damping: 28,
+      mass: 0.85,
+    },
+  },
   cardLift: {
     whileHover: { y: -4, rotate: -0.35, scale: 1.01 },
     transition: {
