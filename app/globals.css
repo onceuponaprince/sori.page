@@ -194,4 +194,24 @@
   .border-sori-soft {
     border-color: var(--border);
   }
+
+  /** Treehouse Multiverse panel: warm parchment field + dotted rails between sections */
+  .sori-bg-parchment {
+    background:
+      linear-gradient(
+        165deg,
+        oklch(0.97 0.02 88 / 0.96) 0%,
+        oklch(0.955 0.018 78 / 0.94) 48%,
+        oklch(0.94 0.022 72 / 0.92) 100%
+      );
+  }
+
+  .sori-border-dotted-y {
+    border-top: 1px dotted oklch(var(--border) / 0.85);
+    border-bottom: 1px dotted oklch(var(--border) / 0.85);
+  }
+
+  .sori-border-dotted {
+    border: 1px dotted oklch(var(--border) / 0.75);
+  }
 }
