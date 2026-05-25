@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  formatAgentProxyError,
+  isAuthContextError,
+} from "@/lib/auth-errors";
 import { fetchContextEngine } from "@/lib/context-engine-gateway";
 import { requireRequestContext } from "@/lib/request-context";
 
-type ProxyMethod = "GET" | "POST";
+type ProxyMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 interface ProxyOptions {
   method: ProxyMethod;
@@ -18,6 +22,7 @@ export async function proxyAgentRequest(
     const context = await requireRequestContext(req);
 
     const headers = new Headers();
+    headers.set("X-User-Id", context.userId);
     if (options.body !== undefined) {
       headers.set("Content-Type", "application/json");
     }
@@ -33,14 +38,9 @@ export async function proxyAgentRequest(
     return NextResponse.json(payload, { status: upstream.status });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const status =
-      message === "Authentication required" ||
-      message === "Invalid auth token" ||
-      message === "Tenant access denied"
-        ? 401
-        : 502;
+    const status = isAuthContextError(message) ? 401 : 502;
     return NextResponse.json(
-      { error: status === 401 ? message : "Backend unavailable" },
+      { error: status === 401 ? message : formatAgentProxyError(error) },
       { status },
     );
   }
