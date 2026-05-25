@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   MultiverseTimeline,
@@ -86,18 +86,33 @@ describe("MultiverseTimeline", () => {
     expect(cols[1].querySelectorAll("[data-node-uid]")).toHaveLength(2);
   });
 
-  it("renders the 'Simulate next beat' placeholder at the end", () => {
+  it("renders the 'Simulate next beat' action at the end", () => {
     render(
       <MultiverseTimeline
         tree={sampleTree}
         activeUid={null}
         onNodeClick={() => {}}
+        onSimulateNextBeat={() => {}}
       />,
     );
     expect(
-      document.querySelector("[data-timeline-simulate-placeholder]"),
+      document.querySelector("[data-timeline-simulate-next]"),
     ).not.toBeNull();
     expect(screen.getByText(/Simulate next beat/i)).toBeInTheDocument();
+  });
+
+  it("calls onSimulateNextBeat when the action is clicked", () => {
+    const onSimulateNextBeat = vi.fn();
+    render(
+      <MultiverseTimeline
+        tree={sampleTree}
+        activeUid={null}
+        onNodeClick={() => {}}
+        onSimulateNextBeat={onSimulateNextBeat}
+      />,
+    );
+    screen.getByRole("button", { name: /Simulate next beat/i }).click();
+    expect(onSimulateNextBeat).toHaveBeenCalledOnce();
   });
 });
 

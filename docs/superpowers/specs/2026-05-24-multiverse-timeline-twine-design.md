@@ -93,8 +93,8 @@ Each node card displays four data fields:
 
 Clicking any non-canon, non-placeholder node:
 1. Calls `createBranch({ fromNodeUid: node.uid, storyUid })` via the wired `useMultiverse` hook
-2. On success, pushes router to `/story/[id]` with a `?resumeNode=<uid>` query param
-3. `SoriEditor` reads `resumeNode` on mount, calls `loadTree` and `setActiveNode(uid)` to restore simulation context
+2. On success, pushes router to `/story/[id]/scene` with a `?resumeNode=<uid>` query param
+3. `ScenePanel` reads `resumeNode` on mount and calls `navigateTo(uid)` to restore simulation context
 
 ### New Files
 
@@ -105,7 +105,7 @@ Clicking any non-canon, non-placeholder node:
 
 ### Modified Files
 
-- `components/editor/SoriEditor.tsx` — read `?resumeNode` query param on mount; call `loadTree(storyUid)` then `setActiveNode(resumeNodeUid)` to restore simulation context when arriving from the timeline page
+- `components/playground/ScenePanel.tsx` — read `?resumeNode` query param on mount; call `navigateTo(resumeNodeUid)` to restore simulation context when arriving from the timeline page
 
 ### Header
 
@@ -169,8 +169,8 @@ Writer views /story/[uid]/timeline
 Writer clicks a node → resumes simulation
   → createBranch({ fromNodeUid })
   → POST /api/agent/branch/ → Neo4j
-  → router.push /story/[id]?resumeNode=<uid>
-  → SoriEditor mounts, loads context, ready to simulate
+   → router.push /story/[id]/scene?resumeNode=<uid>
+   → Scene panel mounts, loads context, ready to simulate
 
 Writer exports
   → GET /api/story/[id]/export/twine (Next.js)
@@ -197,7 +197,7 @@ Writer exports
 
 **Phase 2 — Timeline view:**
 - Playwright: navigate to `/story/[id]/timeline`, assert all nodes render with correct visual state (canon gold border, paradox badge present)
-- Playwright: click an explored node, assert redirect to editor with `?resumeNode` param
+- Playwright: click an explored node, assert redirect to Scene with `?resumeNode` param
 - Vitest: `MultiverseTimeline` unit test with a mock tree — assert correct column grouping from BFS layout
 
 **Phase 3 — Twine round-trip:**

@@ -8,21 +8,31 @@
  * MultiverseTimeline. Click semantics:
  *
  *   - canon nodes are NOT clickable (TimelineNode enforces this)
- *   - any other node click → router.push('/story/<id>?resumeNode=<uid>')
+ *   - any other node click → router.push('/story/<id>/scene?resumeNode=<uid>')
  *
- * The editor reads `?resumeNode=` on mount and restores the active
+ * The scene workspace reads `?resumeNode=` on mount and restores the active
  * node so the writer lands inside the same branch they clicked.
  */
 
-import { use } from "react";
+import { use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMultiverseTree } from "@/lib/use-multiverse-tree";
 import { MultiverseTimeline } from "@/components/timeline/MultiverseTimeline";
+import { TwineImportButton } from "@/components/timeline/TwineImportButton";
+import { findCanonLeaf, suggestNextBeatGoal } from "@/components/timeline/canon-leaf";
 import type { TimelineNodeData } from "@/types/timeline";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+const exportChipStyle = {
+  background: "#1a2a1a",
+  border: "1px solid #3a6a3a",
+  borderRadius: 4,
+  padding: "3px 8px",
+  fontSize: 10,
+} as const;
 
 export default function TimelinePage({ params }: PageProps) {
   // Next.js 15 hands params as a Promise; `use` unwraps it client-side.
@@ -34,10 +44,24 @@ export default function TimelinePage({ params }: PageProps) {
   const canonCount = tree
     ? Object.values(tree.nodes).filter((n) => n.type === "canon").length
     : 0;
+  const canExport = nodeCount > 0;
 
   const handleNodeClick = (node: TimelineNodeData) => {
-    router.push(`/story/${storyUid}?resumeNode=${encodeURIComponent(node.uid)}`);
+    router.push(
+      `/story/${storyUid}/scene?resumeNode=${encodeURIComponent(node.uid)}`,
+    );
   };
+
+  const handleSimulateNextBeat = useCallback(() => {
+    if (!tree) return;
+    const leaf = findCanonLeaf(tree);
+    const sceneGoal = suggestNextBeatGoal(leaf);
+    const params = new URLSearchParams({
+      resumeNode: leaf.uid,
+      sceneGoal,
+    });
+    router.push(`/story/${storyUid}/scene?${params.toString()}`);
+  }, [tree, storyUid, router]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a12", color: "#e8e0f8" }}>
@@ -68,7 +92,7 @@ export default function TimelinePage({ params }: PageProps) {
         <span style={{ color: "#c4b8e8", fontWeight: 600 }}>
           Multiverse Timeline
         </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <span
             style={{
               background: "#1a1530",
@@ -93,21 +117,33 @@ export default function TimelinePage({ params }: PageProps) {
           >
             ★ {canonCount} canon
           </span>
-          <a
-            href={`/api/story/${storyUid}/export/twine`}
-            style={{
-              background: "#1a2a1a",
-              border: "1px solid #3a6a3a",
-              borderRadius: 4,
-              padding: "3px 8px",
-              color: "#6abf8c",
-              fontSize: 10,
-              textDecoration: "none",
-            }}
-            download
-          >
-            Export to Twine
-          </a>
+          <TwineImportButton />
+          {canExport ? (
+            <a
+              href={`/api/story/${storyUid}/export/twine`}
+              style={{
+                ...exportChipStyle,
+                color: "#6abf8c",
+                textDecoration: "none",
+              }}
+              download
+            >
+              Export to Twine
+            </a>
+          ) : (
+            <span
+              aria-disabled="true"
+              title="Add nodes to the timeline before exporting"
+              style={{
+                ...exportChipStyle,
+                color: "#3a5a3a",
+                opacity: 0.5,
+                cursor: "not-allowed",
+              }}
+            >
+              Export to Twine
+            </span>
+          )}
         </div>
       </div>
 
@@ -135,6 +171,7 @@ export default function TimelinePage({ params }: PageProps) {
           tree={tree}
           activeUid={activeUid || null}
           onNodeClick={handleNodeClick}
+          onSimulateNextBeat={tree ? handleSimulateNextBeat : undefined}
         />
       )}
     </div>

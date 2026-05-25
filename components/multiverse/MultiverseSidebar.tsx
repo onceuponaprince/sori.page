@@ -17,8 +17,8 @@ interface MultiverseSidebarProps {
   /**
    * If set, the sidebar will call navigateTo(resumeNodeUid) as soon
    * as the multiverse tree finishes loading and contains a node with
-   * that UID. Used by the /story/[id]?resumeNode=... deep link from
-   * the timeline page so a writer lands inside the branch they
+   * that UID. Used by the /story/[id]/scene?resumeNode=... deep link
+   * from the timeline page so a writer lands inside the branch they
    * clicked.
    */
   resumeNodeUid?: string | null;

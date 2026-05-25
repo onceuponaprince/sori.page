@@ -28,6 +28,7 @@ interface Props {
   tree: TimelineTree | null;
   activeUid: string | null;
   onNodeClick: (node: TimelineNodeData) => void;
+  onSimulateNextBeat?: () => void;
 }
 
 export function buildColumns(tree: TimelineTree): TimelineNodeData[][] {
@@ -78,7 +79,12 @@ function buildPositionMap(
   return map;
 }
 
-export function MultiverseTimeline({ tree, activeUid, onNodeClick }: Props) {
+export function MultiverseTimeline({
+  tree,
+  activeUid,
+  onNodeClick,
+  onSimulateNextBeat,
+}: Props) {
   if (!tree) {
     return (
       <div style={{ padding: 48, color: "#6a5a8a", textAlign: "center" }}>
@@ -172,8 +178,12 @@ export function MultiverseTimeline({ tree, activeUid, onNodeClick }: Props) {
             minHeight: NODE_H,
           }}
         >
-          <div
-            data-timeline-simulate-placeholder
+          <button
+            type="button"
+            data-timeline-simulate-next
+            onClick={onSimulateNextBeat}
+            disabled={!onSimulateNextBeat}
+            aria-label="Simulate next beat"
             style={{
               border: "2px dashed #3a2a5a",
               borderRadius: 10,
@@ -184,8 +194,10 @@ export function MultiverseTimeline({ tree, activeUid, onNodeClick }: Props) {
               alignItems: "center",
               justifyContent: "center",
               gap: 4,
-              cursor: "default",
-              opacity: 0.5,
+              cursor: onSimulateNextBeat ? "pointer" : "default",
+              opacity: onSimulateNextBeat ? 1 : 0.5,
+              background: "transparent",
+              color: "inherit",
             }}
           >
             <div
@@ -208,7 +220,7 @@ export function MultiverseTimeline({ tree, activeUid, onNodeClick }: Props) {
             >
               Simulate next beat
             </span>
-          </div>
+          </button>
         </div>
       </motion.div>
     </div>

@@ -400,10 +400,22 @@ async function buildAuthHeaders(
   return headers;
 }
 
+const ERROR_CODE_MESSAGES: Record<string, string> = {
+  CHARACTER_NOT_PUBLISHED:
+    "One or both characters are not published. Publish them in the Characters tab before simulating.",
+  CHARACTER_NOT_FOUND:
+    "Character not found in the graph. Republish from the Characters tab and try again.",
+};
+
 async function extractErrorMessage(response: Response, fallback: string) {
   const payload = await response.json().catch(() => null) as
-    | { error?: string; detail?: string }
+    | { error?: string; detail?: string; code?: string }
     | null;
+
+  if (payload?.code && ERROR_CODE_MESSAGES[payload.code]) {
+    return ERROR_CODE_MESSAGES[payload.code];
+  }
+
   return payload?.error || payload?.detail || fallback;
 }
 

@@ -1049,7 +1049,7 @@ export default function TimelinePage({ params }: Props) {
 
   const handleNodeClick = async (node: MultiverseNode) => {
     await createBranch({ fromNodeUid: node.uid, storyUid })
-    router.push(`/story/${storyUid}?resumeNode=${node.uid}`)
+    router.push(`/story/${storyUid}/scene?resumeNode=${node.uid}`)
   }
 
   return (
@@ -1834,7 +1834,7 @@ Expected: all passing
 1. Start services: `docker compose up -d`
 2. Navigate to `/story/[a real story uid]/timeline`
 3. Confirm nodes render with gold canon border + paradox badge where applicable
-4. Click an explored node → confirm redirect to editor with `?resumeNode=` in URL
-5. In editor, confirm simulation context restores (active node highlighted in MultiverseLab)
+4. Click an explored node → confirm redirect to Scene with `?resumeNode=` in URL
+5. In Scene, confirm simulation context restores (active node highlighted in Scene)
 6. In timeline header, click "Export to Twine" → confirm `.html` file downloads
 7. In timeline header, click "Import from Twine" → upload the downloaded file → confirm redirect to new story timeline with same structure
