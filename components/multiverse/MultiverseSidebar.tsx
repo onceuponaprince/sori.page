@@ -11,7 +11,7 @@ import type { ChoiceIntent, EpistemicProfile } from "@/types/multiverse";
 interface MultiverseSidebarProps {
   storyUid: string;
   isOpen: boolean;
-  onBeatCreated?: (beatId: string) => void;
+  onBeatCreated?: (beatId: string, summary: string, pattern: string) => void;
   onClose: () => void;
   availableCharacterIds: Array<{ id: string; name: string }>;
 }
@@ -53,9 +53,13 @@ export function MultiverseSidebar({
   }, [sceneGoal, selectedCharA, selectedCharB, startSimulation]);
 
   const handleCommit = useCallback(async () => {
-    await commitBranch();
-    if (onBeatCreated && activeNode) {
-      onBeatCreated(activeNode.id);
+    const beatId = await commitBranch();
+    if (onBeatCreated && activeNode && beatId) {
+      onBeatCreated(
+        beatId,
+        activeNode.sceneGoal,
+        activeNode.metadata.structuralPattern ?? "unclassified",
+      );
     }
   }, [commitBranch, onBeatCreated, activeNode]);
 

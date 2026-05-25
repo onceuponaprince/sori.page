@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -230,6 +230,26 @@ export function SoriEditor() {
     return () => window.clearTimeout(timeout);
   }, [generate, loading, plainText, title, storyUid]);
 
+  const handleBeatCreated = useCallback((beatId: string, summary: string, pattern: string) => {
+    if (!editor) return;
+
+    editor.commands.insertContent([
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            marks: [{ type: "bold" }],
+            text: `[Beat: ${pattern}] `,
+          },
+          { type: "text", text: summary },
+        ],
+      },
+      { type: "paragraph" },
+    ]);
+
+    setSavedLabel(`Beat ${beatId.slice(0, 8)} inserted`);
+  }, [editor]);
   if (!mounted) {
     return (
       <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
@@ -323,9 +343,7 @@ export function SoriEditor() {
           storyUid={storyUid}
           isOpen={multiverseOpen}
           onClose={() => setMultiverseOpen(false)}
-          onBeatCreated={(beatId) => {
-            setSavedLabel(`Beat ${beatId.slice(0, 8)} created`);
-          }}
+          onBeatCreated={handleBeatCreated}
           availableCharacterIds={
             analysis?.epistemicState?.characters.map((c) => ({
               id: c.name.toLowerCase().replace(/\s+/g, "-"),
