@@ -53,3 +53,5 @@ backend/.venv/
 # Docker volumes
 neo4j_data/
 weaviate_data/
+# git worktrees (subagent-driven development)
+/.worktrees/
