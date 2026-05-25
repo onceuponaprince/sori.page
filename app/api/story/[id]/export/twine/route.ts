@@ -40,7 +40,14 @@ interface EngineTree {
 }
 
 function nodeToPassage(node: EngineNode): TwinePassage {
-  const tags: string[] = [node.type === "canon" ? "canon" : "explored"];
+  // Preserve the node's logical type on round-trip via tags. The
+  // import route reads these to reconstruct node_type — without the
+  // `decision` tag, decision nodes would degrade to `simulation` on
+  // re-import.
+  const tags: string[] = [];
+  if (node.type === "canon") tags.push("canon");
+  else if (node.type === "decision") tags.push("decision");
+  else tags.push("explored");
   if (node.metadata?.isParadox) tags.push("paradox");
   if (node.metadata?.structuralPattern) {
     tags.push(node.metadata.structuralPattern.toLowerCase());
