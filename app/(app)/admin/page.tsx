@@ -11,6 +11,16 @@ interface GraphStats {
   total_gaps: number;
 }
 
+interface AdminUserRow {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  credits: number;
+  tier: string;
+  created_at: string | null;
+  last_sign_in_at: string | null;
+}
+
 const FALLBACK_STATS: GraphStats = {
   total_concepts: 0,
   total_functions: 0,
@@ -41,8 +51,11 @@ function StatCard({
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<GraphStats>(FALLBACK_STATS);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -63,6 +76,24 @@ export default function AdminDashboardPage() {
       }
     }
     fetchStats();
+  }, []);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("/api/admin/users");
+        if (!res.ok) {
+          throw new Error("Could not load users");
+        }
+        const data = (await res.json()) as { users: AdminUserRow[] };
+        setUsers(data.users ?? []);
+      } catch {
+        setUsersError("User list unavailable.");
+      } finally {
+        setUsersLoading(false);
+      }
+    }
+    fetchUsers();
   }, []);
 
   return (
@@ -111,6 +142,41 @@ export default function AdminDashboardPage() {
           <Button asChild variant="outline">
             <Link href="/contribute">Contribute</Link>
           </Button>
+        </div>
+      </div>
+
+      <div>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 500 }} className="mb-3 text-foreground">Users</h2>
+        <div className="border border-border bg-card divide-y divide-border">
+          {usersLoading ? (
+            <div className="p-4 text-sm" style={{ color: "#8A857E" }}>
+              Loading users...
+            </div>
+          ) : usersError ? (
+            <div className="p-4 text-sm text-yellow-800">{usersError}</div>
+          ) : users.length === 0 ? (
+            <div className="p-4 text-sm" style={{ color: "#8A857E" }}>
+              No users found.
+            </div>
+          ) : (
+            users.map((user) => (
+              <div key={user.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                <div className="flex flex-col gap-0.5">
+                  <span style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                    {user.display_name || user.email || user.id}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }}>
+                    {user.email ?? "No email"} · {user.credits} credits · {user.tier}
+                  </span>
+                </div>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "0.68rem", color: "#8A857E" }} className="whitespace-nowrap">
+                  {user.last_sign_in_at
+                    ? new Date(user.last_sign_in_at).toLocaleDateString()
+                    : "Never signed in"}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

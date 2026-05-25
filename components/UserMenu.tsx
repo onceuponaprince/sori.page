@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { isAdminUser } from "@/lib/admin-auth";
 import { createServerClient } from "@/lib/supabase/server";
 
 async function signOutAction() {
@@ -54,6 +55,7 @@ export async function UserMenu() {
   const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || null;
   const credits = profile?.credits ?? 0;
   const initials = getInitials(displayName);
+  const showAdminLink = isAdminUser(user);
 
   return (
     <details className="relative">
@@ -79,6 +81,14 @@ export async function UserMenu() {
         >
           Account
         </Link>
+        {showAdminLink ? (
+          <Link
+            href="/admin"
+            className="block px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Admin
+          </Link>
+        ) : null}
         <form action={signOutAction}>
           <button
             type="submit"

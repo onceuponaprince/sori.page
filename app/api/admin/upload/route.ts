@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/require-admin";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
@@ -14,6 +15,15 @@ const BACKEND_URL =
  * 4. Falls back to local processing if the backend is unavailable.
  */
 export async function POST(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

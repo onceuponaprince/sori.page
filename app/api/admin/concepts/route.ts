@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/require-admin";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
@@ -14,6 +15,15 @@ const BACKEND_URL =
  * the backend is unreachable.
  */
 export async function GET(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const query = searchParams.get("q");
@@ -54,6 +64,15 @@ export async function GET(req: NextRequest) {
  * backend is unreachable.
  */
 export async function POST(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
