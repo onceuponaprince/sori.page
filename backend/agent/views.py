@@ -37,6 +37,7 @@ from agent.serializers import (
     SimulateRequestSerializer,
     BranchRequestSerializer,
     CommitRequestSerializer,
+    ImportRequestSerializer,
 )
 from agent.tasks import run_simulation_task, create_snapshot_task
 
@@ -613,6 +614,110 @@ def get_multiverse_tree(request, story_uid):
         "rootNodeId": root_node_id,
         "nodes": nodes_map,
     })
+
+
+# ============================================================
+# POST /api/agent/import/
+# ============================================================
+
+
+@api_view(["POST"])
+def import_multiverse(request):
+    """Bulk-create a story + multiverse tree from a Twine import payload.
+
+    The Next.js /api/story/import/twine route parses a Twee or Twine 2
+    HTML file, denormalises it into {nodes, edges}, and POSTs here. We
+    allocate a StoryNode, a MultiverseRootNode, one MultiverseSceneNode
+    per `nodes[]` entry, and one ChoiceEdgeNode per `edges[]` entry.
+
+    The owner_id is read from request.user.id when authenticated.
+    Unauthenticated requests are accepted with an "anonymous" owner so
+    local dev round-trips still work; tighten this when the engine
+    middleware lands a unified auth gate.
+
+    Response (201): { "story_uid": str }
+    """
+    serializer = ImportRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    data = serializer.validated_data
+
+    from graph.models.story import StoryNode
+    from graph.models.multiverse import (
+        MultiverseRootNode,
+        MultiverseSceneNode,
+        ChoiceEdgeNode,
+    )
+
+    owner_id = (
+        str(request.user.id)
+        if getattr(request, "user", None) and request.user.is_authenticated
+        else "anonymous"
+    )
+
+    # ── Create the canonical StoryNode that owns this multiverse ──
+    story = StoryNode(
+        title=data["story_title"],
+        owner_id=owner_id,
+        status="scaffolded",
+    )
+    story.save()
+
+    # ── Create the multiverse root ──
+    root = MultiverseRootNode(story_uid=story.uid)
+    root.save()
+
+    # ── Create MultiverseSceneNodes; map source_name → uid ──
+    uid_map: dict[str, str] = {}
+    for node_data in data["nodes"]:
+        node = MultiverseSceneNode(
+            node_type=node_data["type"],
+            scene_goal=node_data["summary"] or node_data["source_name"],
+            confidence_score=node_data.get("confidence", 1.0),
+            paradox_count=1 if node_data.get("has_paradox") else 0,
+            is_paradox=1 if node_data.get("has_paradox") else 0,
+            structural_pattern=node_data.get("structural_pattern") or None,
+            dialogue_turns=[],
+            active_character_ids=[],
+            epistemic_profiles=[],
+        )
+        node.save()
+        uid_map[node_data["source_name"]] = node.uid
+        root.children.connect(node)
+
+    # ── Create ChoiceEdgeNodes ──
+    for edge_data in data["edges"]:
+        from_uid = uid_map.get(edge_data["from_name"])
+        to_uid = uid_map.get(edge_data["to_name"])
+        if not from_uid or not to_uid:
+            # Skip dangling edges silently — the Next.js route already
+            # filtered for known targets, so this only fires when the
+            # serializer received an inconsistent payload.
+            continue
+
+        from_node = MultiverseSceneNode.nodes.get_or_none(uid=from_uid)
+        to_node = MultiverseSceneNode.nodes.get_or_none(uid=to_uid)
+        if not from_node or not to_node:
+            continue
+
+        edge = ChoiceEdgeNode(
+            label=edge_data["label"],
+            intent="truth",
+        )
+        edge.save()
+        edge.target.connect(to_node)
+        from_node.choices.connect(edge, {"order": edge_data.get("order", 0)})
+        # Parent → child link mirrors the live simulation flow.
+        from_node.children.connect(to_node)
+
+    return Response(
+        {"story_uid": story.uid},
+        status=status.HTTP_201_CREATED,
+    )
 
 
 # ============================================================

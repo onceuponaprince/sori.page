@@ -230,3 +230,59 @@ class StateSnapshotSerializer(serializers.Serializer):
     locationStates = serializers.DictField(source="location_states")
     relationshipStates = serializers.DictField(source="relationship_states")
     createdAt = serializers.CharField(source="created_at")
+
+
+# ============================================================
+# IMPORT SERIALIZERS (Twine → multiverse bulk upload)
+# ============================================================
+
+
+class ImportNodeSerializer(serializers.Serializer):
+    """A single MultiverseSceneNode in an import payload.
+
+    `source_name` is the passage name from the Twine source; the
+    backend rewrites references between nodes using these names
+    before persisting. The actual UID is allocated by neomodel.
+    """
+
+    source_name = serializers.CharField(max_length=200)
+    type = serializers.ChoiceField(
+        choices=["decision", "canon", "simulation"]
+    )
+    summary = serializers.CharField(max_length=500, allow_blank=True)
+    confidence = serializers.FloatField(default=1.0)
+    has_paradox = serializers.BooleanField(default=False)
+    structural_pattern = serializers.CharField(
+        allow_blank=True, default=""
+    )
+
+
+class ImportEdgeSerializer(serializers.Serializer):
+    """A single ChoiceEdgeNode in an import payload."""
+
+    from_name = serializers.CharField(max_length=200)
+    to_name = serializers.CharField(max_length=200)
+    label = serializers.CharField(max_length=300)
+    order = serializers.IntegerField(default=0)
+
+
+class ImportRequestSerializer(serializers.Serializer):
+    """POST /api/agent/import/ request body.
+
+    Validates a flat nodes + edges payload produced by the Next.js
+    Twine import route (lib/twine/parser.ts → app/api/story/import/
+    twine/route.ts). The serializer rejects empty node lists so the
+    backend never creates an orphan StoryNode + MultiverseRootNode
+    pair.
+    """
+
+    story_title = serializers.CharField(max_length=300)
+    nodes = ImportNodeSerializer(many=True)
+    edges = ImportEdgeSerializer(many=True)
+
+    def validate_nodes(self, value):
+        if len(value) == 0:
+            raise serializers.ValidationError(
+                "At least one node is required."
+            )
+        return value

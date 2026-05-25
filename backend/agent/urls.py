@@ -56,4 +56,9 @@ urlpatterns = [
         views.list_characters,
         name="agent-characters",
     ),
+    path(
+        "import/",
+        views.import_multiverse,
+        name="agent-import-multiverse",
+    ),
 ]
