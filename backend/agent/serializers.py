@@ -286,3 +286,44 @@ class ImportRequestSerializer(serializers.Serializer):
                 "At least one node is required."
             )
         return value
+
+
+class CharacterDraftSerializer(serializers.Serializer):
+    source = serializers.CharField()
+    expected_revision = serializers.IntegerField(required=False)
+
+
+class CharacterCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200)
+    id_slug = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+
+class CharacterComponentSubmitSerializer(serializers.Serializer):
+    """POST /api/agent/characters/<story_uid>/component/ request body."""
+
+    source = serializers.CharField(min_length=1)
+
+
+class CharacterChatSerializer(serializers.Serializer):
+    story_uid = serializers.CharField()
+    character_id = serializers.CharField()
+    message = serializers.CharField(min_length=1, max_length=2000)
+    thread_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+class StoryDocumentSerializer(serializers.Serializer):
+    editor_document = serializers.JSONField(required=False, allow_null=True)
+    editor_preset = serializers.ChoiceField(
+        choices=["novel", "script"],
+        required=False,
+    )
+
+
+class StoryCreateSerializer(serializers.Serializer):
+    """POST /api/agent/story/ request body."""
+
+    title = serializers.CharField(
+        max_length=300,
+        required=False,
+        default="Untitled Story",
+    )

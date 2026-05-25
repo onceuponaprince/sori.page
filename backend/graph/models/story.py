@@ -55,6 +55,10 @@ class StoryNode(StructuredNode):
         default="scaffolded",
     )
 
+    editor_document = JSONProperty(default=None)
+    editor_preset = StringProperty(default="novel")
+    default_tab = StringProperty(default="editor")
+
     created_at = DateTimeProperty(default_now=True)
     updated_at = DateTimeProperty(default_now=True)
 
@@ -139,7 +143,23 @@ class CharacterNode(StructuredNode):
     aliases = ArrayProperty(StringProperty(), default=[])
     role_hint = StringProperty()
 
+    source_type = StringProperty(default="analyzer")
+    virtual_path = StringProperty()
+    draft_source = StringProperty(default="")
+    draft_frontmatter = JSONProperty(default={})
+    draft_revision = IntegerProperty(default=0)
+    published_source = StringProperty(default="")
+    published_frontmatter = JSONProperty(default={})
+    published_at = DateTimeProperty()
+    published_revision = IntegerProperty(default=0)
+    review_status = StringProperty(default="none")
+    character_bio = StringProperty(default="")
+    voice = StringProperty(default="")
+    tags = ArrayProperty(StringProperty(), default=[])
+    agent_config = JSONProperty(default={})
+
     created_at = DateTimeProperty(default_now=True)
+    updated_at = DateTimeProperty(default_now=True)
 
     knows = RelationshipTo("StoryFactNode", "KNOWS_AT", model=TemporalRel)
     acts_on = RelationshipTo("StoryFactNode", "ACTS_ON", model=TemporalRel)

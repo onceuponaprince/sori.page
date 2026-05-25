@@ -25,8 +25,11 @@ All views return consistent error shapes:
 { "error": "Human-readable message", "code": "MACHINE_CODE" }
 """
 
+import json
 import logging
 import uuid
+
+from django.http import StreamingHttpResponse
 
 from celery.result import AsyncResult
 from rest_framework import status
@@ -38,8 +41,25 @@ from agent.serializers import (
     BranchRequestSerializer,
     CommitRequestSerializer,
     ImportRequestSerializer,
+    CharacterDraftSerializer,
+    CharacterCreateSerializer,
+    CharacterChatSerializer,
+    CharacterComponentSubmitSerializer,
+    StoryDocumentSerializer,
+    StoryCreateSerializer,
 )
+from agent.chat_service import stream_character_chat, append_thread_messages
 from agent.tasks import run_simulation_task, create_snapshot_task
+from agent.character_parser import (
+    build_default_character_md,
+    parse_character_md,
+)
+from agent.component_parser import parse_character_component
+from agent.character_playground import (
+    character_to_playground_dict,
+    publish_character_node,
+    slugify,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +116,15 @@ def simulate_scene(request):
                     "code": "CHARACTER_NOT_FOUND",
                 },
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not char_node.published_at:
+            return Response(
+                {
+                    "error": "Character not published",
+                    "code": "CHARACTER_NOT_PUBLISHED",
+                },
+                status=status.HTTP_409_CONFLICT,
             )
 
         # Build the epistemic profile for this character.
@@ -452,6 +481,9 @@ def commit_branch(request):
         else "No knowledge changes (branch was consistent with current state)"
     )
 
+    parents = node.parent.all()
+    parent_node_id = parents[0].uid if parents else None
+
     return Response({
         "node": {
             "id": node.uid,
@@ -468,7 +500,7 @@ def commit_branch(request):
                 "paradoxCount": node.paradox_count,
             },
             "epistemicProfiles": list(node.epistemic_profiles or []),
-            "parentNodeId": None,
+            "parentNodeId": parent_node_id,
             "createdAt": node.created_at.isoformat() if node.created_at else "",
         },
         "relationalBeatId": beat_id,
@@ -480,41 +512,481 @@ def commit_branch(request):
 # GET /api/agent/characters/<story_uid>/
 # ============================================================
 
+from graph.models.story import CharacterNode as StoryCharacterNode
+
 
 @api_view(["GET"])
 def list_characters(request, story_uid):
-    """Return every CharacterNode scoped to a given story.
+    """Return every CharacterNode scoped to a story (playground metadata)."""
+    characters = StoryCharacterNode.nodes.filter(story_uid=story_uid)
+    return Response({
+        "characters": [character_to_playground_dict(c) for c in characters]
+    })
 
-    The Multiverse Sidebar needs real CharacterNode UIDs (not slugified
-    display names) to pass to ``simulate_scene``; otherwise the backend
-    raises ``CHARACTER_NOT_FOUND`` and the simulation never starts.
 
-    Response: {
-        "characters": [
-            {
-                "id": str,         # CharacterNode.uid
-                "name": str,
-                "roleHint": str | null,
-                "aliases": str[],
-            },
-            ...
-        ]
-    }
-    """
+@api_view(["POST"])
+def create_story_character(request, story_uid):
+    """Create a new MD character with an empty draft template."""
+    serializer = CharacterCreateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     from graph.models.story import CharacterNode
 
-    characters = CharacterNode.nodes.filter(story_uid=story_uid)
+    data = serializer.validated_data
+    name = data["name"].strip()
+    id_slug = (data.get("id_slug") or "").strip() or slugify(name)
+    draft_source = build_default_character_md(name, id_slug)
+
+    char = CharacterNode(
+        name=name,
+        story_uid=story_uid,
+        source_type="md",
+        virtual_path=f"characters/{id_slug}.md",
+        draft_source=draft_source,
+        draft_frontmatter={"id": id_slug, "name": name, "tags": []},
+        draft_revision=1,
+        review_status="none",
+    )
+    char.save()
+
+    return Response(
+        character_to_playground_dict(char),
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["GET", "DELETE"])
+def get_story_character(request, story_uid, char_id):
+    from graph.models.story import CharacterNode
+
+    try:
+        char = CharacterNode.nodes.get(uid=char_id, story_uid=story_uid)
+    except CharacterNode.DoesNotExist:
+        return Response(
+            {"error": "Character not found", "code": "NOT_FOUND"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if request.method == "DELETE":
+        if char.published_at:
+            return Response(
+                {"error": "Cannot delete published character", "code": "PUBLISHED"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        char.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    return Response(character_to_playground_dict(char))
+
+
+@api_view(["PUT"])
+def save_character_draft(request, story_uid, char_id):
+    serializer = CharacterDraftSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from graph.models.story import CharacterNode
+
+    try:
+        char = CharacterNode.nodes.get(uid=char_id, story_uid=story_uid)
+    except CharacterNode.DoesNotExist:
+        return Response(
+            {"error": "Character not found", "code": "NOT_FOUND"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    source = serializer.validated_data["source"]
+    try:
+        parsed = parse_character_md(source)
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc), "code": "INVALID_FRONTMATTER"},
+            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    char.draft_source = source
+    char.draft_frontmatter = parsed["frontmatter"]
+    char.draft_revision = (char.draft_revision or 0) + 1
+    char.name = parsed["frontmatter"]["name"]
+    char.virtual_path = f"characters/{parsed['frontmatter']['id']}.md"
+    char.save()
+
+    return Response(character_to_playground_dict(char))
+
+
+@api_view(["POST"])
+def publish_story_character(request, story_uid, char_id):
+    from graph.models.story import CharacterNode
+
+    try:
+        char = CharacterNode.nodes.get(uid=char_id, story_uid=story_uid)
+    except CharacterNode.DoesNotExist:
+        return Response(
+            {"error": "Character not found", "code": "NOT_FOUND"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    expected_revision = request.data.get("expected_revision")
+    try:
+        result = publish_character_node(
+            char,
+            expected_revision=int(expected_revision) if expected_revision is not None else None,
+        )
+    except ValueError as exc:
+        code = str(exc)
+        status_code = status.HTTP_409_CONFLICT if code == "STALE_REVISION" else status.HTTP_403_FORBIDDEN
+        if code == "EMPTY_DRAFT":
+            status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        return Response({"error": code, "code": code}, status=status_code)
+
+    return Response(result)
+
+
+def _find_character_by_component_id(story_uid: str, component_id: str):
+    """Find an existing character node by @character id slug."""
+    from graph.models.story import CharacterNode
+
+    expected_path = f"_components/{component_id}.tsx"
+    for char in CharacterNode.nodes.filter(story_uid=story_uid):
+        frontmatter = char.draft_frontmatter or {}
+        if frontmatter.get("id") == component_id:
+            return char
+        if char.virtual_path == expected_path:
+            return char
+    return None
+
+
+@api_view(["POST"])
+def submit_character_component(request, story_uid):
+    """Submit a contributor React/TSX character component for review."""
+    serializer = CharacterComponentSubmitSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from graph.models.story import CharacterNode
+
+    source = serializer.validated_data["source"]
+    try:
+        parsed = parse_character_component(source)
+    except ValueError as exc:
+        return Response(
+            {"error": str(exc), "code": "INVALID_COMPONENT"},
+            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    frontmatter = parsed["frontmatter"]
+    id_slug = frontmatter["id"]
+    char = _find_character_by_component_id(story_uid, id_slug)
+    created = char is None
+
+    if created:
+        char = CharacterNode(
+            name=frontmatter["name"],
+            story_uid=story_uid,
+            source_type="react",
+            virtual_path=f"_components/{id_slug}.tsx",
+            draft_revision=1,
+            review_status="pending",
+        )
+    else:
+        if char.source_type == "md":
+            return Response(
+                {
+                    "error": "An MD character with this id already exists",
+                    "code": "ID_CONFLICT",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        char.draft_revision = (char.draft_revision or 0) + 1
+        char.review_status = "pending"
+
+    char.draft_source = source
+    char.draft_frontmatter = frontmatter
+    char.name = frontmatter["name"]
+    char.source_type = "react"
+    char.virtual_path = f"_components/{id_slug}.tsx"
+    char.save()
+
+    return Response(
+        character_to_playground_dict(char),
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+# ============================================================
+# POST /api/agent/chat/  |  GET /api/agent/chat/<thread_id>/
+# ============================================================
+
+
+@api_view(["POST"])
+def character_chat(request):
+    serializer = CharacterChatSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    data = serializer.validated_data
+    from graph.models.story import CharacterNode
+    from graph.models.chat import ChatThreadNode
+
+    try:
+        char = CharacterNode.nodes.get(
+            uid=data["character_id"],
+            story_uid=data["story_uid"],
+        )
+    except CharacterNode.DoesNotExist:
+        return Response(
+            {"error": "Character not found", "code": "NOT_FOUND"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if not char.published_at:
+        return Response(
+            {"error": "Character not published", "code": "CHARACTER_NOT_PUBLISHED"},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    thread_id = data.get("thread_id")
+    if thread_id:
+        try:
+            thread = ChatThreadNode.nodes.get(uid=thread_id)
+        except ChatThreadNode.DoesNotExist:
+            thread = None
+    else:
+        thread = None
+
+    if thread is None:
+        thread = ChatThreadNode(
+            story_uid=data["story_uid"],
+            character_id=char.uid,
+            messages=[],
+        )
+        thread.save()
+        thread.with_character.connect(char)
+
+    profile_dict = _build_epistemic_profile(
+        char_node=char,
+        story_uid=data["story_uid"],
+        snapshot_id=None,
+    )
+
+    user_message = data["message"]
+    prior_messages = list(thread.messages or [])
+    captured = {"assistant": ""}
+
+    def event_stream():
+        yield f"data: {json.dumps({'type': 'thread', 'threadId': thread.uid})}\n\n"
+        for chunk in stream_character_chat(
+            char_node=char,
+            profile_dict=profile_dict,
+            user_message=user_message,
+            prior_messages=prior_messages,
+        ):
+            if '"type": "done"' in chunk:
+                payload = json.loads(chunk.replace("data: ", "").strip())
+                captured["assistant"] = payload.get("assistantMessage", "")
+            yield chunk
+
+        if captured["assistant"]:
+            append_thread_messages(thread, user_message, captured["assistant"])
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="text/event-stream",
+    )
+    response["Cache-Control"] = "no-cache"
+    return response
+
+
+@api_view(["GET"])
+def character_chat_thread(request, thread_id):
+    from graph.models.chat import ChatThreadNode
+
+    try:
+        thread = ChatThreadNode.nodes.get(uid=thread_id)
+    except ChatThreadNode.DoesNotExist:
+        return Response(
+            {"error": "Thread not found", "code": "NOT_FOUND"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
     return Response({
-        "characters": [
-            {
-                "id": c.uid,
-                "name": c.name,
-                "roleHint": c.role_hint,
-                "aliases": list(c.aliases or []),
-            }
-            for c in characters
-        ]
+        "threadId": thread.uid,
+        "storyUid": thread.story_uid,
+        "characterId": thread.character_id,
+        "messages": list(thread.messages or []),
     })
+
+
+# ============================================================
+# Story lifecycle — list, create, document
+# ============================================================
+
+
+def _resolve_owner_id(request) -> str:
+    """Resolve the acting user for story ownership.
+
+    Prefers Django auth when present, then the X-User-Id header forwarded
+    by the Next.js agent proxy, then anonymous for local dev round-trips.
+    """
+    if getattr(request, "user", None) and request.user.is_authenticated:
+        return str(request.user.id)
+
+    header = request.META.get("HTTP_X_USER_ID")
+    if header:
+        return str(header)
+
+    return "anonymous"
+
+
+def _story_list_item(story) -> dict:
+    created_at = getattr(story, "created_at", None)
+    updated_at = getattr(story, "updated_at", None)
+    return {
+        "storyUid": story.uid,
+        "title": story.title,
+        "status": story.status,
+        "editorPreset": story.editor_preset or "novel",
+        "createdAt": created_at.isoformat() if created_at else None,
+        "updatedAt": updated_at.isoformat() if updated_at else None,
+    }
+
+
+def _story_document_payload(story) -> dict:
+    return {
+        "storyUid": story.uid,
+        "title": story.title,
+        "editorDocument": story.editor_document,
+        "editorPreset": story.editor_preset or "novel",
+    }
+
+
+def _get_or_create_story(story_uid: str, owner_id: str, title: str = "Untitled Story"):
+    from graph.models.story import StoryNode
+
+    try:
+        return StoryNode.nodes.get(uid=story_uid), False
+    except StoryNode.DoesNotExist:
+        story = StoryNode(
+            title=title,
+            owner_id=owner_id,
+            status="in_progress",
+        )
+        story.uid = story_uid
+        story.save()
+        return story, True
+
+
+@api_view(["GET"])
+def list_stories(request):
+    """List stories for the current user.
+
+    In DEBUG mode, unauthenticated requests (owner_id=anonymous) return all
+    stories so local dev can browse existing graph data.
+    """
+    from django.conf import settings
+    from graph.models.story import StoryNode
+
+    owner_id = _resolve_owner_id(request)
+    if settings.DEBUG and owner_id == "anonymous":
+        nodes = list(StoryNode.nodes.all())
+    else:
+        nodes = list(StoryNode.nodes.filter(owner_id=owner_id))
+
+    nodes.sort(
+        key=lambda story: story.updated_at or story.created_at,
+        reverse=True,
+    )
+
+    return Response({"stories": [_story_list_item(story) for story in nodes]})
+
+
+@api_view(["POST"])
+def create_story(request):
+    """Create a new StoryNode and return its UID."""
+    from graph.models.story import StoryNode
+
+    serializer = StoryCreateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    data = serializer.validated_data
+    owner_id = _resolve_owner_id(request)
+
+    story = StoryNode(
+        title=data["title"],
+        owner_id=owner_id,
+        status="in_progress",
+    )
+    story.save()
+
+    return Response(_story_list_item(story), status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "POST"])
+def story_index(request):
+    """GET list / POST create at /api/agent/story/."""
+    if request.method == "GET":
+        return list_stories(request)
+    return create_story(request)
+
+
+@api_view(["GET", "PUT"])
+def story_document(request, story_uid):
+    from graph.models.story import StoryNode
+
+    if request.method == "GET":
+        story, _created = _get_or_create_story(
+            story_uid,
+            owner_id=_resolve_owner_id(request),
+        )
+        return Response(_story_document_payload(story))
+
+    try:
+        story = StoryNode.nodes.get(uid=story_uid)
+    except StoryNode.DoesNotExist:
+        return Response(
+            {
+                "error": "Story not found",
+                "code": "NOT_FOUND",
+                "createUrl": "/story/new",
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = StoryDocumentSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Invalid request", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    data = serializer.validated_data
+    if "editor_document" in data:
+        story.editor_document = data["editor_document"]
+    if "editor_preset" in data:
+        story.editor_preset = data["editor_preset"]
+    story.save()
+
+    return Response(_story_document_payload(story))
+
+
+# Legacy alias kept for imports — list_characters is the canonical name.
 
 
 # ============================================================
@@ -782,11 +1254,17 @@ def _build_epistemic_profile(
                 "learnedAtBeat": None,
             })
 
+    bio = (char_node.character_bio or "").strip()
+    if not bio:
+        bio = f"{char_node.name} — {char_node.role_hint or 'a character in the story'}"
+    if char_node.voice:
+        bio = f"{bio}\nVoice: {char_node.voice}"
+
     return {
         "characterId": char_node.uid,
         "characterName": char_node.name,
         "roleHint": char_node.role_hint,
-        "characterBio": f"{char_node.name} — {char_node.role_hint or 'a character in the story'}",
+        "characterBio": bio,
         "knownFacts": known_facts,
         "unknownFacts": unknown_facts,
     }
