@@ -51,4 +51,9 @@ urlpatterns = [
         views.get_multiverse_tree,
         name="agent-multiverse-tree",
     ),
+    path(
+        "characters/<str:story_uid>/",
+        views.list_characters,
+        name="agent-characters",
+    ),
 ]

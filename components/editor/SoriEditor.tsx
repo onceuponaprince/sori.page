@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStream } from "@/lib/use-stream";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { useStoryCharacters } from "@/lib/use-story-characters";
 import type { AnalyzerResult, EpistemicState } from "@/lib/analyzer-types";
 import { MultiverseSidebar } from "@/components/multiverse/MultiverseSidebar";
 
@@ -93,6 +94,8 @@ export function SoriEditor() {
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
   const [multiverseOpen, setMultiverseOpen] = useState(false);
+
+  const { characters: storyCharacters } = useStoryCharacters(storyUid);
 
   const {
     analysis,
@@ -345,10 +348,18 @@ export function SoriEditor() {
           onClose={() => setMultiverseOpen(false)}
           onBeatCreated={handleBeatCreated}
           availableCharacterIds={
-            analysis?.epistemicState?.characters.map((c) => ({
-              id: c.name.toLowerCase().replace(/\s+/g, "-"),
-              name: c.name,
-            })) || []
+            // Prefer canonical CharacterNode UIDs from the graph so the
+            // backend can find them during simulate_scene. Fall back to
+            // the analyzer's detected names ONLY when the graph has not
+            // yet persisted any character rows for this story; that
+            // path will still raise CHARACTER_NOT_FOUND on simulate, but
+            // the UI degrades gracefully.
+            storyCharacters.length > 0
+              ? storyCharacters.map((c) => ({ id: c.id, name: c.name }))
+              : analysis?.epistemicState?.characters.map((c) => ({
+                  id: c.name.toLowerCase().replace(/\s+/g, "-"),
+                  name: c.name,
+                })) || []
           }
         />
       )}

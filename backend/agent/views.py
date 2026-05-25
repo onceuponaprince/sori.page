@@ -476,6 +476,47 @@ def commit_branch(request):
 
 
 # ============================================================
+# GET /api/agent/characters/<story_uid>/
+# ============================================================
+
+
+@api_view(["GET"])
+def list_characters(request, story_uid):
+    """Return every CharacterNode scoped to a given story.
+
+    The Multiverse Sidebar needs real CharacterNode UIDs (not slugified
+    display names) to pass to ``simulate_scene``; otherwise the backend
+    raises ``CHARACTER_NOT_FOUND`` and the simulation never starts.
+
+    Response: {
+        "characters": [
+            {
+                "id": str,         # CharacterNode.uid
+                "name": str,
+                "roleHint": str | null,
+                "aliases": str[],
+            },
+            ...
+        ]
+    }
+    """
+    from graph.models.story import CharacterNode
+
+    characters = CharacterNode.nodes.filter(story_uid=story_uid)
+    return Response({
+        "characters": [
+            {
+                "id": c.uid,
+                "name": c.name,
+                "roleHint": c.role_hint,
+                "aliases": list(c.aliases or []),
+            }
+            for c in characters
+        ]
+    })
+
+
+# ============================================================
 # GET /api/agent/multiverse/<story_uid>/
 # ============================================================
 
