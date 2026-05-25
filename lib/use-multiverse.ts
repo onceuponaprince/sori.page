@@ -19,8 +19,8 @@
  *    and debug than a WebSocket connection. We can upgrade to WebSocket
  *    in v2 if the polling frequency becomes a problem.
  *
- * 3. All API calls go through the Django backend, not directly to
- *    the Next.js API routes. The Django backend owns Neo4j and Celery.
+ * 3. All browser calls go through Next.js API routes. The route layer
+ *    handles auth + tenant routing before forwarding to the engine.
  *
  * USAGE
  * ─────
@@ -36,7 +36,7 @@
  */
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { createContextEngineClient } from "@/packages/sdk-ts/src";
+import { createBrowserClient } from "@/lib/supabase/client";
 import type {
   MultiverseState,
   MultiverseNode,
@@ -45,25 +45,6 @@ import type {
   ApiCommitResponse,
   ChoiceIntent,
 } from "@/types/multiverse";
-
-// ============================================================
-// CONFIGURATION
-// ============================================================
-
-/**
- * Base URL for the Django backend API.
- * Falls back to localhost:8001 in development (context-engine service).
- */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
-const CONTEXT_ENGINE_API_KEY = process.env.NEXT_PUBLIC_CONTEXT_ENGINE_API_KEY;
-const CONTEXT_ENGINE_TENANT_ID = process.env.NEXT_PUBLIC_CONTEXT_ENGINE_TENANT_ID;
-
-const contextEngineClient = createContextEngineClient({
-  baseUrl: API_BASE,
-  apiKey: CONTEXT_ENGINE_API_KEY,
-  tenantId: CONTEXT_ENGINE_TENANT_ID,
-});
 
 /**
  * How often to poll for simulation completion (in milliseconds).
@@ -105,7 +86,7 @@ type MultiverseAction =
  * The initial state before any data is loaded.
  * All fields are empty/false — the UI shows a "start simulation" prompt.
  */
-function createInitialState(): MultiverseState {
+export function createInitialState(): MultiverseState {
   return {
     rootNodeId: "",
     activeNodeId: "",
@@ -143,7 +124,7 @@ function createInitialState(): MultiverseState {
  *   NAVIGATE_TO / NAVIGATE_BACK
  *     Changes which node the Oracle chat displays.
  */
-function multiverseReducer(
+export function multiverseReducer(
   state: MultiverseState,
   action: MultiverseAction,
 ): MultiverseState {
@@ -380,7 +361,7 @@ export interface UseMultiverseReturn {
    * Changes the active node's type to 'canon', merges its snapshot
    * into the main graph, and generates a RelationalBeat ID.
    */
-  commitBranch: () => void;
+  commitBranch: () => Promise<string | null>;
 
   /** Navigate to a specific node in the tree */
   navigateTo: (nodeId: string) => void;
@@ -390,6 +371,52 @@ export interface UseMultiverseReturn {
 
   /** Clear the current error message */
   clearError: () => void;
+}
+
+async function buildAuthHeaders(
+  contentType: "application/json" | null = null,
+): Promise<Record<string, string>> {
+  const supabase = createBrowserClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+
+  const headers: Record<string, string> = {};
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
+
+  const accessToken = session?.access_token;
+  const tenantId =
+    (session?.user?.user_metadata?.tenant_id as string | undefined) ||
+    (session?.user?.app_metadata?.tenant_id as string | undefined);
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  if (tenantId) {
+    headers["X-Tenant-Id"] = tenantId;
+  }
+
+  return headers;
+}
+
+const ERROR_CODE_MESSAGES: Record<string, string> = {
+  CHARACTER_NOT_PUBLISHED:
+    "One or both characters are not published. Publish them in the Characters tab before simulating.",
+  CHARACTER_NOT_FOUND:
+    "Character not found in the graph. Republish from the Characters tab and try again.",
+};
+
+async function extractErrorMessage(response: Response, fallback: string) {
+  const payload = await response.json().catch(() => null) as
+    | { error?: string; detail?: string; code?: string }
+    | null;
+
+  if (payload?.code && ERROR_CODE_MESSAGES[payload.code]) {
+    return ERROR_CODE_MESSAGES[payload.code];
+  }
+
+  return payload?.error || payload?.detail || fallback;
 }
 
 export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverseReturn {
@@ -407,7 +434,17 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
 
     async function loadTree() {
       try {
-        const data = await contextEngineClient.getMultiverseTree(storyUid);
+        const res = await fetch(`/api/agent/multiverse/${storyUid}`, {
+          headers: await buildAuthHeaders(),
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          throw new Error(
+            await extractErrorMessage(res, `Tree fetch failed: ${res.status}`),
+          );
+        }
+
+        const data = await res.json() as Pick<MultiverseState, "rootNodeId" | "nodes">;
         if (data.rootNodeId && Object.keys(data.nodes).length > 0) {
           dispatch({
             type: "INIT_TREE",
@@ -473,7 +510,17 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
         }
 
         try {
-          const data = await contextEngineClient.getSimulationStatus(taskId);
+          const res = await fetch(`/api/agent/simulate/${taskId}/status`, {
+            headers: await buildAuthHeaders(),
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            throw new Error(
+              await extractErrorMessage(res, `Status poll failed: ${res.status}`),
+            );
+          }
+
+          const data = await res.json() as { state: string; data: any; error: string | null };
 
           if (data.state === "SUCCESS" && data.data) {
             // Simulation complete — stop polling and update state.
@@ -496,6 +543,9 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
                 isParadox: taskResult.isParadox ?? false,
                 paradoxCount: taskResult.paradoxCount ?? 0,
               },
+              epistemicProfiles: Array.isArray(taskResult.epistemicProfiles)
+                ? taskResult.epistemicProfiles
+                : [],
               parentNodeId: taskResult.parentNodeId ?? null,
               createdAt: new Date().toISOString(),
             };
@@ -531,15 +581,26 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
       dispatch({ type: "SIMULATION_START" });
 
       try {
-        const data = await contextEngineClient.startSimulation({
-          story_uid: storyUid,
-          scene_goal: sceneGoal,
-          character_ids: characterIds,
-          state_snapshot_id: state.activeNodeId
-            ? state.nodes[state.activeNodeId]?.stateSnapshotId || null
-            : null,
-          parent_node_id: state.activeNodeId || null,
+        const res = await fetch("/api/agent/simulate", {
+          method: "POST",
+          headers: await buildAuthHeaders("application/json"),
+          body: JSON.stringify({
+            story_uid: storyUid,
+            scene_goal: sceneGoal,
+            character_ids: characterIds,
+            state_snapshot_id: state.activeNodeId
+              ? state.nodes[state.activeNodeId]?.stateSnapshotId || null
+              : null,
+            parent_node_id: state.activeNodeId || null,
+          }),
         });
+        if (!res.ok) {
+          throw new Error(
+            await extractErrorMessage(res, `Simulation failed: ${res.status}`),
+          );
+        }
+
+        const data = await res.json() as { taskId: string; nodeId: string };
         const { taskId, nodeId } = data;
 
         // Start polling for the simulation result.
@@ -566,12 +627,23 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
       dispatch({ type: "BRANCH_START" });
 
       try {
-        const data: ApiBranchResponse = await contextEngineClient.createBranch({
-          source_node_id: state.activeNodeId,
-          choice_label: choiceLabel,
-          intent,
-          state_snapshot_id: activeNode.stateSnapshotId,
+        const res = await fetch("/api/agent/branch", {
+          method: "POST",
+          headers: await buildAuthHeaders("application/json"),
+          body: JSON.stringify({
+            source_node_id: state.activeNodeId,
+            choice_label: choiceLabel,
+            intent,
+            state_snapshot_id: activeNode.stateSnapshotId,
+          }),
         });
+        if (!res.ok) {
+          throw new Error(
+            await extractErrorMessage(res, `Branch failed: ${res.status}`),
+          );
+        }
+
+        const data = await res.json() as ApiBranchResponse;
 
         dispatch({
           type: "BRANCH_COMPLETE",
@@ -592,14 +664,25 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
     [state.activeNodeId, state.nodes],
   );
 
-  const commitBranch = useCallback(async () => {
-    if (!state.activeNodeId) return;
+  const commitBranch = useCallback(async (): Promise<string | null> => {
+    if (!state.activeNodeId) return null;
 
     try {
-      const data: ApiCommitResponse = await contextEngineClient.commitBranch({
-        node_id: state.activeNodeId,
-        story_uid: storyUid,
+      const res = await fetch("/api/agent/commit", {
+        method: "POST",
+        headers: await buildAuthHeaders("application/json"),
+        body: JSON.stringify({
+          node_id: state.activeNodeId,
+          story_uid: storyUid,
+        }),
       });
+      if (!res.ok) {
+        throw new Error(
+          await extractErrorMessage(res, `Commit failed: ${res.status}`),
+        );
+      }
+
+      const data = await res.json() as ApiCommitResponse;
 
       dispatch({
         type: "COMMIT_COMPLETE",
@@ -608,6 +691,8 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
           beatId: data.relationalBeatId,
         },
       });
+
+      return data.relationalBeatId;
     } catch (err) {
       dispatch({
         type: "SIMULATION_ERROR",
@@ -615,6 +700,7 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
           error: err instanceof Error ? err.message : "Failed to commit branch",
         },
       });
+      return null;
     }
   }, [state.activeNodeId, storyUid]);
 

@@ -137,6 +137,9 @@ def run_simulation_task(
     scene_node.is_paradox = 1 if result.is_paradox else 0
     scene_node.paradox_count = result.paradox_count
     scene_node.structural_pattern = result.structural_pattern
+    # Cache the profiles used during this simulation so the multiverse tree
+    # GET endpoint can return them without re-walking the snapshot graph.
+    scene_node.epistemic_profiles = [character_a_data, character_b_data]
     scene_node.save()
 
     # Create ChoiceEdgeNodes for each suggested decision branch.
@@ -177,6 +180,9 @@ def run_simulation_task(
         "paradoxCount": result.paradox_count,
         "structuralPattern": result.structural_pattern,
         "choices": choice_edges,
+        # Per-node epistemic profiles — the frontend uses these to render the
+        # "who knows what" badges in the Oracle chat without an extra request.
+        "epistemicProfiles": [character_a_data, character_b_data],
         "warnings": [
             t.paradox_detail
             for t in result.turns

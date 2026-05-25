@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import type { NextRequest } from "next/server";
+import { getDevSessionContextFromRequest } from "@/lib/dev-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface RequestContext {
@@ -18,13 +19,45 @@ function extractBearerToken(req: NextRequest): string | null {
   return authHeader.slice(7).trim() || null;
 }
 
-export async function requireRequestContext(req: NextRequest): Promise<RequestContext> {
+function baseContext(
+  req: NextRequest,
+  userId: string,
+  email: string | null,
+): Pick<RequestContext, "requestId" | "idempotencyKey" | "userId" | "email"> {
   const requestId = req.headers.get("x-request-id") || randomUUID();
   const idempotencyKey =
     req.headers.get("x-idempotency-key") || `${requestId}:default`;
+
+  return { userId, email, requestId, idempotencyKey };
+}
+
+async function resolveDevSessionContext(
+  req: NextRequest,
+): Promise<RequestContext | null> {
+  const devSession = await getDevSessionContextFromRequest(req);
+  if (!devSession) {
+    return null;
+  }
+
+  const requestedTenantId = req.headers.get("x-tenant-id");
+  if (requestedTenantId) {
+    throw new Error("Tenant access denied");
+  }
+
+  return {
+    ...baseContext(req, devSession.userId, devSession.email),
+    tenantId: null,
+  };
+}
+
+export async function requireRequestContext(req: NextRequest): Promise<RequestContext> {
   const token = extractBearerToken(req);
 
   if (!token) {
+    const devContext = await resolveDevSessionContext(req);
+    if (devContext) {
+      return devContext;
+    }
     throw new Error("Authentication required");
   }
 
@@ -37,11 +70,8 @@ export async function requireRequestContext(req: NextRequest): Promise<RequestCo
   const requestedTenantId = req.headers.get("x-tenant-id");
   if (!requestedTenantId) {
     return {
-      userId: data.user.id,
-      email: data.user.email ?? null,
+      ...baseContext(req, data.user.id, data.user.email ?? null),
       tenantId: null,
-      requestId,
-      idempotencyKey,
     };
   }
 
@@ -58,10 +88,7 @@ export async function requireRequestContext(req: NextRequest): Promise<RequestCo
   }
 
   return {
-    userId: data.user.id,
-    email: data.user.email ?? null,
+    ...baseContext(req, data.user.id, data.user.email ?? null),
     tenantId: requestedTenantId,
-    requestId,
-    idempotencyKey,
   };
 }

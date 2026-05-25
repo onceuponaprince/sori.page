@@ -178,6 +178,12 @@ class MultiverseSceneNode(StructuredNode):
     is_paradox = IntegerProperty(default=0)
     paradox_count = IntegerProperty(default=0)
 
+    # Cached epistemic profiles for the two active characters at simulation
+    # time. Stored as a JSON array of EpistemicProfile dicts so the tree GET
+    # endpoint can return them without re-walking the snapshot graph.
+    # Empty for fresh branch targets that have not yet been simulated.
+    epistemic_profiles = JSONProperty(default=[])
+
     created_at = DateTimeProperty(default_now=True)
     updated_at = DateTimeProperty(default_now=True)
 

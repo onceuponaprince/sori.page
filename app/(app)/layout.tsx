@@ -1,3 +1,4 @@
+import { AdminNavLink } from "@/components/AdminNavLink";
 import { ActiveLink } from "@/components/Navbar";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -15,12 +16,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </a>
             <nav className="flex flex-wrap gap-2">
               <ActiveLink href="/write">Write</ActiveLink>
+              <ActiveLink href="/stories">Stories</ActiveLink>
               <ActiveLink href="/discover">Discover</ActiveLink>
               <ActiveLink href="/generate">Beats</ActiveLink>
               <ActiveLink href="/characters">Characters</ActiveLink>
               <ActiveLink href="/contribute">Community</ActiveLink>
               <ActiveLink href="/gaps">Gaps</ActiveLink>
-              <ActiveLink href="/admin">Admin</ActiveLink>
+              <AdminNavLink />
             </nav>
           </div>
           <div className="flex items-center">

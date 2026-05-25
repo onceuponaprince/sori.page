@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-      success_url: `${origin}/generate?billing=success`,
-      cancel_url: `${origin}/generate?billing=cancelled`,
+      success_url: `${origin}/account?billing=success`,
+      cancel_url: `${origin}/account?billing=cancelled`,
       metadata: {
         plan_id: plan.id,
         user_id: context.userId,

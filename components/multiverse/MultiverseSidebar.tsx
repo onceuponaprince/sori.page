@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { multiverseMotion } from "@/lib/sori-motion";
 import { useMultiverse } from "@/lib/use-multiverse";
@@ -11,9 +11,17 @@ import type { ChoiceIntent, EpistemicProfile } from "@/types/multiverse";
 interface MultiverseSidebarProps {
   storyUid: string;
   isOpen: boolean;
-  onBeatCreated?: (beatId: string) => void;
+  onBeatCreated?: (beatId: string, summary: string, pattern: string) => void;
   onClose: () => void;
   availableCharacterIds: Array<{ id: string; name: string }>;
+  /**
+   * If set, the sidebar will call navigateTo(resumeNodeUid) as soon
+   * as the multiverse tree finishes loading and contains a node with
+   * that UID. Used by the /story/[id]/scene?resumeNode=... deep link
+   * from the timeline page so a writer lands inside the branch they
+   * clicked.
+   */
+  resumeNodeUid?: string | null;
 }
 
 type SidebarTab = "tree" | "oracle";
@@ -24,6 +32,7 @@ export function MultiverseSidebar({
   onBeatCreated,
   onClose,
   availableCharacterIds,
+  resumeNodeUid,
 }: MultiverseSidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>("oracle");
   const [sceneGoal, setSceneGoal] = useState("");
@@ -45,6 +54,18 @@ export function MultiverseSidebar({
     clearError,
   } = useMultiverse({ storyUid });
 
+  // Honor ?resumeNode= once the tree contains the target node.
+  // Only fires per uid so navigating back manually does not get
+  // overridden by the deep link.
+  const lastHandledResumeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!resumeNodeUid) return;
+    if (lastHandledResumeRef.current === resumeNodeUid) return;
+    if (!state.nodes[resumeNodeUid]) return;
+    lastHandledResumeRef.current = resumeNodeUid;
+    navigateTo(resumeNodeUid);
+  }, [resumeNodeUid, state.nodes, navigateTo]);
+
   const handleStartSimulation = useCallback(() => {
     if (!sceneGoal.trim()) return;
     if (!selectedCharA || !selectedCharB) return;
@@ -53,9 +74,13 @@ export function MultiverseSidebar({
   }, [sceneGoal, selectedCharA, selectedCharB, startSimulation]);
 
   const handleCommit = useCallback(async () => {
-    await commitBranch();
-    if (onBeatCreated && activeNode) {
-      onBeatCreated(activeNode.id);
+    const beatId = await commitBranch();
+    if (onBeatCreated && activeNode && beatId) {
+      onBeatCreated(
+        beatId,
+        activeNode.sceneGoal,
+        activeNode.metadata.structuralPattern ?? "unclassified",
+      );
     }
   }, [commitBranch, onBeatCreated, activeNode]);
 
@@ -71,7 +96,10 @@ export function MultiverseSidebar({
     [selectChoice],
   );
 
-  const profiles: [EpistemicProfile, EpistemicProfile] | null = null;
+  const profiles: [EpistemicProfile, EpistemicProfile] | null =
+    activeNode && activeNode.epistemicProfiles.length === 2
+      ? [activeNode.epistemicProfiles[0], activeNode.epistemicProfiles[1]]
+      : null;
 
   return (
     <AnimatePresence>
