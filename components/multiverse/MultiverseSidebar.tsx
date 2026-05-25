@@ -75,7 +75,10 @@ export function MultiverseSidebar({
     [selectChoice],
   );
 
-  const profiles: [EpistemicProfile, EpistemicProfile] | null = null;
+  const profiles: [EpistemicProfile, EpistemicProfile] | null =
+    activeNode && activeNode.epistemicProfiles.length === 2
+      ? [activeNode.epistemicProfiles[0], activeNode.epistemicProfiles[1]]
+      : null;
 
   return (
     <AnimatePresence>

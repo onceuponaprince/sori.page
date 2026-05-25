@@ -243,6 +243,15 @@ export interface MultiverseNode {
   /** Structural metadata computed by the backend's validation pass */
   metadata: MultiverseNodeMetadata;
 
+  /**
+   * Cached epistemic profiles for the two active characters at the moment
+   * this node's simulation ran. Populated by the backend when the Celery
+   * task completes and persisted on MultiverseSceneNode. Empty array for
+   * decision-only nodes and freshly branched simulations awaiting a run.
+   * Consumers should require `length === 2` before rendering profile pairs.
+   */
+  epistemicProfiles: EpistemicProfile[];
+
   /** ID of the parent node. null for the root of the tree. */
   parentNodeId: string | null;
 

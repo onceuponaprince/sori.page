@@ -86,7 +86,7 @@ type MultiverseAction =
  * The initial state before any data is loaded.
  * All fields are empty/false — the UI shows a "start simulation" prompt.
  */
-function createInitialState(): MultiverseState {
+export function createInitialState(): MultiverseState {
   return {
     rootNodeId: "",
     activeNodeId: "",
@@ -124,7 +124,7 @@ function createInitialState(): MultiverseState {
  *   NAVIGATE_TO / NAVIGATE_BACK
  *     Changes which node the Oracle chat displays.
  */
-function multiverseReducer(
+export function multiverseReducer(
   state: MultiverseState,
   action: MultiverseAction,
 ): MultiverseState {
@@ -531,6 +531,9 @@ export function useMultiverse({ storyUid }: UseMultiverseOptions): UseMultiverse
                 isParadox: taskResult.isParadox ?? false,
                 paradoxCount: taskResult.paradoxCount ?? 0,
               },
+              epistemicProfiles: Array.isArray(taskResult.epistemicProfiles)
+                ? taskResult.epistemicProfiles
+                : [],
               parentNodeId: taskResult.parentNodeId ?? null,
               createdAt: new Date().toISOString(),
             };

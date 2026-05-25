@@ -314,6 +314,8 @@ def create_branch(request):
                     "isParadox": False,
                     "paradoxCount": 0,
                 },
+                # Empty until the writer triggers a simulation on this branch.
+                "epistemicProfiles": [],
                 "parentNodeId": source_node.uid,
                 "createdAt": (
                     target_node.created_at.isoformat()
@@ -464,6 +466,7 @@ def commit_branch(request):
                 "isParadox": bool(node.is_paradox),
                 "paradoxCount": node.paradox_count,
             },
+            "epistemicProfiles": list(node.epistemic_profiles or []),
             "parentNodeId": None,
             "createdAt": node.created_at.isoformat() if node.created_at else "",
         },
@@ -551,6 +554,7 @@ def get_multiverse_tree(request, story_uid):
                 "isParadox": bool(current.is_paradox),
                 "paradoxCount": current.paradox_count,
             },
+            "epistemicProfiles": list(current.epistemic_profiles or []),
             "parentNodeId": parent_id,
             "createdAt": (
                 current.created_at.isoformat() if current.created_at else ""
