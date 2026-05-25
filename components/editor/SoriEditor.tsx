@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -82,10 +83,19 @@ function loadStoredDraft(): StoredDraft {
   }
 }
 
-export function SoriEditor() {
+interface SoriEditorProps {
+  /**
+   * Overrides the localStorage-derived storyUid. Used by /story/[id]
+   * route to pin the editor to a specific story. When absent, the
+   * legacy /write entry point keeps its own localStorage draft.
+   */
+  storyUid?: string;
+}
+
+export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {}) {
   const initialDraft = useMemo(loadStoredDraft, []);
   const [mounted, setMounted] = useState(false);
-  const [storyUid] = useState(initialDraft.storyUid);
+  const [storyUid] = useState(storyUidOverride ?? initialDraft.storyUid);
   const [sceneUid] = useState(initialDraft.sceneUid);
   const [title, setTitle] = useState(initialDraft.title);
   const [plainText, setPlainText] = useState(initialDraft.outlineText);
@@ -93,7 +103,17 @@ export function SoriEditor() {
   const [savedLabel, setSavedLabel] = useState("Saved locally");
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
-  const [multiverseOpen, setMultiverseOpen] = useState(false);
+
+  // ?resumeNode= drives the open-state of the Multiverse Lab so a
+  // click on the timeline page lands the writer inside the same
+  // branch they selected.
+  const searchParams = useSearchParams();
+  const resumeNodeUid = searchParams.get("resumeNode");
+  const [multiverseOpen, setMultiverseOpen] = useState(Boolean(resumeNodeUid));
+
+  useEffect(() => {
+    if (resumeNodeUid) setMultiverseOpen(true);
+  }, [resumeNodeUid]);
 
   const { characters: storyCharacters } = useStoryCharacters(storyUid);
 
@@ -347,6 +367,7 @@ export function SoriEditor() {
           isOpen={multiverseOpen}
           onClose={() => setMultiverseOpen(false)}
           onBeatCreated={handleBeatCreated}
+          resumeNodeUid={resumeNodeUid}
           availableCharacterIds={
             // Prefer canonical CharacterNode UIDs from the graph so the
             // backend can find them during simulate_scene. Fall back to
