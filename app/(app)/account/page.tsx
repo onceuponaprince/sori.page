@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { BillingSection } from "./BillingSection";
 
 export default async function AccountPage() {
   const supabase = await createServerClient();
@@ -15,6 +16,12 @@ export default async function AccountPage() {
     .from("profiles")
     .select("display_name, username, avatar_url, credits, tier, created_at")
     .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: billingCustomer } = await supabase
+    .from("billing_customers")
+    .select("stripe_customer_id")
+    .eq("user_id", user.id)
     .maybeSingle();
 
   return (
@@ -40,7 +47,7 @@ export default async function AccountPage() {
           }}
           className="mt-2"
         >
-          Review your profile and plan details.
+          Review your profile, credits, and plan.
         </p>
       </div>
 
@@ -59,10 +66,6 @@ export default async function AccountPage() {
             <dd className="mt-1 text-foreground">{profile?.username || "Not set"}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Credits</dt>
-            <dd className="mt-1 text-foreground">{profile?.credits ?? 0}</dd>
-          </div>
-          <div>
             <dt className="text-xs uppercase tracking-wide text-muted-foreground">Tier</dt>
             <dd className="mt-1 text-foreground">{profile?.tier ?? "free"}</dd>
           </div>
@@ -76,6 +79,12 @@ export default async function AccountPage() {
           </div>
         </dl>
       </section>
+
+      <BillingSection
+        credits={profile?.credits ?? 0}
+        tier={profile?.tier ?? "free"}
+        hasBillingCustomer={Boolean(billingCustomer?.stripe_customer_id)}
+      />
     </div>
   );
 }

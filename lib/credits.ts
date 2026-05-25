@@ -1,5 +1,62 @@
 import { createAdminClient } from "./supabase/admin";
 
+export const INSUFFICIENT_CREDITS_CODE = "insufficient_credits";
+
+export type CreditOperation = "analyze" | "beat" | "character" | "chat_message";
+
+const DEFAULT_CREDIT_COSTS: Record<CreditOperation, number> = {
+  analyze: 1,
+  beat: 1,
+  character: 1,
+  chat_message: 1,
+};
+
+/** Per-operation credit cost. Chat cost is overridable via CHAT_CREDIT_COST. */
+export function getCreditCost(operation: CreditOperation): number {
+  if (operation === "chat_message") {
+    const configured = process.env.CHAT_CREDIT_COST;
+    if (configured) {
+      const parsed = Number.parseInt(configured, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+  }
+  return DEFAULT_CREDIT_COSTS[operation];
+}
+
+export function creditErrorResponse(params: {
+  error?: string;
+  requestId?: string;
+  status?: 402 | 403;
+}) {
+  return new Response(
+    JSON.stringify({
+      error:
+        params.error ||
+        "Not enough credits. Upgrade your plan on the Account page to continue.",
+      code: INSUFFICIENT_CREDITS_CODE,
+    }),
+    {
+      status: params.status ?? 402,
+      headers: {
+        "Content-Type": "application/json",
+        ...(params.requestId ? { "X-Request-Id": params.requestId } : {}),
+      },
+    },
+  );
+}
+
+export function isInsufficientCreditsPayload(payload: {
+  code?: string;
+  error?: string;
+} | null): boolean {
+  if (!payload) return false;
+  if (payload.code === INSUFFICIENT_CREDITS_CODE) return true;
+  const message = payload.error?.toLowerCase() ?? "";
+  return message.includes("credit") || message.includes("not enough");
+}
+
 export interface CreditCheck {
   allowed: boolean;
   remaining: number;
