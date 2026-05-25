@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -13,6 +13,11 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import { useStoryCharacters } from "@/lib/use-story-characters";
 import type { AnalyzerResult, EpistemicState } from "@/lib/analyzer-types";
 import { MultiverseSidebar } from "@/components/multiverse/MultiverseSidebar";
+import { FormatToolbar } from "@/components/playground/FormatToolbar";
+import { UseAsSceneGoalButton } from "@/components/playground/UseAsSceneGoalButton";
+import { playgroundEditorExtensions } from "@/lib/tiptap/script-nodes";
+import type { FormatPreset } from "@/lib/format-presets";
+import { useStoryBeatOptional } from "@/lib/story-beat-context";
 
 const STORAGE_KEY = "sori-treehouse-draft-v1";
 
@@ -35,6 +40,43 @@ function createEmptyDocument(text = ""): JSONContent {
       },
     ],
   };
+}
+
+function extractPlainText(doc: JSONContent): string {
+  const parts: string[] = [];
+
+  function walk(node: JSONContent) {
+    if (node.type === "text" && node.text) {
+      parts.push(node.text);
+      return;
+    }
+    (node.content || []).forEach(walk);
+    if (node.type === "paragraph" || node.type === "heading") {
+      parts.push("\n");
+    }
+  }
+
+  walk(doc);
+  return parts.join("").trim();
+}
+
+async function buildStoryAuthHeaders(): Promise<Record<string, string>> {
+  const supabase = createBrowserClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const accessToken = session?.access_token;
+  const tenantId =
+    (session?.user?.user_metadata?.tenant_id as string | undefined) ||
+    (session?.user?.app_metadata?.tenant_id as string | undefined);
+
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (tenantId) headers["X-Tenant-Id"] = tenantId;
+
+  return headers;
 }
 
 function loadStoredDraft(): StoredDraft {
@@ -94,28 +136,26 @@ interface SoriEditorProps {
 
 export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {}) {
   const initialDraft = useMemo(loadStoredDraft, []);
+  const isStoryScoped = Boolean(storyUidOverride);
   const [mounted, setMounted] = useState(false);
   const [storyUid] = useState(storyUidOverride ?? initialDraft.storyUid);
   const [sceneUid] = useState(initialDraft.sceneUid);
   const [title, setTitle] = useState(initialDraft.title);
   const [plainText, setPlainText] = useState(initialDraft.outlineText);
   const [editorJson, setEditorJson] = useState<JSONContent>(initialDraft.editorJson);
-  const [savedLabel, setSavedLabel] = useState("Saved locally");
+  const [editorPreset, setEditorPreset] = useState<FormatPreset>("novel");
+  const [storyDocumentLoaded, setStoryDocumentLoaded] = useState(!isStoryScoped);
+  const [savedLabel, setSavedLabel] = useState(
+    isStoryScoped ? "Loading story…" : "Saved locally",
+  );
   const [userId, setUserId] = useState<string | null>(null);
   const lastAnalyzedRef = useRef("");
 
-  // ?resumeNode= drives the open-state of the Multiverse Lab so a
-  // click on the timeline page lands the writer inside the same
-  // branch they selected.
-  const searchParams = useSearchParams();
-  const resumeNodeUid = searchParams.get("resumeNode");
-  const [multiverseOpen, setMultiverseOpen] = useState(Boolean(resumeNodeUid));
-
-  useEffect(() => {
-    if (resumeNodeUid) setMultiverseOpen(true);
-  }, [resumeNodeUid]);
+  const [multiverseOpen, setMultiverseOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
 
   const { characters: storyCharacters } = useStoryCharacters(storyUid);
+  const storyBeat = useStoryBeatOptional();
 
   const {
     analysis,
@@ -138,8 +178,9 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
         placeholder:
           "Paste an outline, sketch a scene, or map the emotional turns you already know. sori will look for structure, not prose perfection.",
       }),
+      ...playgroundEditorExtensions,
     ],
-    content: initialDraft.editorJson,
+    content: editorJson,
     editorProps: {
       attributes: {
         class:
@@ -150,7 +191,7 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
       setPlainText(currentEditor.getText());
       setEditorJson(currentEditor.getJSON());
     },
-  });
+  }, [storyDocumentLoaded]);
 
   useEffect(() => {
     setMounted(true);
@@ -183,6 +224,95 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
   }, []);
 
   useEffect(() => {
+    if (!isStoryScoped || !storyUidOverride) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadStoryDocument() {
+      setSavedLabel("Loading story…");
+      try {
+        const response = await fetch(`/api/story/${storyUidOverride}/document`, {
+          headers: await buildStoryAuthHeaders(),
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Story document load failed");
+        }
+
+        const payload = (await response.json()) as {
+          title?: string;
+          editorDocument?: JSONContent | null;
+          editorPreset?: FormatPreset;
+        };
+
+        if (cancelled) return;
+
+        if (payload.title) {
+          setTitle(payload.title);
+        }
+        if (payload.editorPreset === "novel" || payload.editorPreset === "script") {
+          setEditorPreset(payload.editorPreset);
+        }
+        if (payload.editorDocument) {
+          setEditorJson(payload.editorDocument);
+          setPlainText(extractPlainText(payload.editorDocument));
+        }
+
+        setStoryDocumentLoaded(true);
+        setSavedLabel("Saved");
+      } catch {
+        if (!cancelled) {
+          setStoryDocumentLoaded(true);
+          setSavedLabel("Saved locally");
+        }
+      }
+    }
+
+    loadStoryDocument();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isStoryScoped, storyUidOverride]);
+
+  useEffect(() => {
+    if (!isStoryScoped || !storyDocumentLoaded) {
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      setSavedLabel("Saving...");
+      try {
+        const response = await fetch(`/api/story/${storyUid}/document`, {
+          method: "PUT",
+          headers: await buildStoryAuthHeaders(),
+          body: JSON.stringify({
+            editor_document: editorJson,
+            editor_preset: editorPreset,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Story document save failed");
+        }
+
+        setSavedLabel("Saved");
+      } catch {
+        setSavedLabel("Save failed");
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timeout);
+  }, [editorJson, editorPreset, isStoryScoped, storyDocumentLoaded, storyUid]);
+
+  useEffect(() => {
+    if (isStoryScoped) {
+      return;
+    }
+
     const snapshot: StoredDraft = {
       storyUid,
       sceneUid,
@@ -195,9 +325,13 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     }
-  }, [analysis, editorJson, initialDraft.analysis, plainText, sceneUid, storyUid, title]);
+  }, [analysis, editorJson, initialDraft.analysis, isStoryScoped, plainText, sceneUid, storyUid, title]);
 
   useEffect(() => {
+    if (isStoryScoped) {
+      return;
+    }
+
     if (!title.trim() && !plainText.trim()) {
       return;
     }
@@ -230,7 +364,7 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
     }, 900);
 
     return () => window.clearTimeout(timeout);
-  }, [analysis, editorJson, plainText, sceneUid, storyUid, title, userId]);
+  }, [analysis, editorJson, isStoryScoped, plainText, sceneUid, storyUid, title, userId]);
 
   useEffect(() => {
     if (!plainText.trim() || plainText.trim().length < 120) {
@@ -273,9 +407,73 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
 
     setSavedLabel(`Beat ${beatId.slice(0, 8)} inserted`);
   }, [editor]);
-  if (!mounted) {
+
+  useEffect(() => {
+    if (!isStoryScoped || !storyBeat) return;
+    storyBeat.registerBeatHandler(handleBeatCreated);
+    return () => storyBeat.unregisterBeatHandler();
+  }, [isStoryScoped, storyBeat, handleBeatCreated]);
+
+  useEffect(() => {
+    if (!editor || !isStoryScoped) return;
+
+    function updateSelection() {
+      const { from, to, empty } = editor!.state.selection;
+      if (empty || from === to) {
+        setSelectedText("");
+        return;
+      }
+      setSelectedText(editor!.state.doc.textBetween(from, to, " ").trim());
+    }
+
+    updateSelection();
+    editor.on("selectionUpdate", updateSelection);
+    return () => {
+      editor.off("selectionUpdate", updateSelection);
+    };
+  }, [editor, isStoryScoped]);
+
+  useEffect(() => {
+    if (!isStoryScoped || !storyUidOverride || !editor) return;
+
+    async function reloadDocumentFromBeatInsert(event: Event) {
+      const detail = (event as CustomEvent<{ storyUid?: string }>).detail;
+      if (detail?.storyUid && detail.storyUid !== storyUidOverride) return;
+      if (!editor) return;
+
+      try {
+        const response = await fetch(`/api/story/${storyUidOverride}/document`, {
+          headers: await buildStoryAuthHeaders(),
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          editorDocument?: JSONContent | null;
+        };
+        if (payload.editorDocument) {
+          editor.commands.setContent(payload.editorDocument);
+          setEditorJson(payload.editorDocument);
+          setPlainText(extractPlainText(payload.editorDocument));
+          setSavedLabel("Beat inserted from Scene");
+        }
+      } catch {
+        // Ignore reload failures; autosave will reconcile on next edit.
+      }
+    }
+
+    window.addEventListener("story-beat-inserted", reloadDocumentFromBeatInsert);
+    return () => {
+      window.removeEventListener("story-beat-inserted", reloadDocumentFromBeatInsert);
+    };
+  }, [isStoryScoped, storyUidOverride, editor]);
+  if (!mounted || (isStoryScoped && !storyDocumentLoaded)) {
     return (
-      <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
+      <div className="space-y-4">
+        {!isStoryScoped && (
+          <SaveToStoryBanner />
+        )}
+        <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
         <section className="border border-border bg-card p-6">
           <div className="h-[72dvh] border border-border" />
         </section>
@@ -286,12 +484,17 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
             </p>
           </div>
         </aside>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
+    <div className="space-y-4">
+      {!isStoryScoped && (
+        <SaveToStoryBanner />
+      )}
+      <div className={`grid gap-5 p-4 md:p-6 ${multiverseOpen ? "xl:grid-cols-[minmax(0,1fr)_300px_340px]" : "xl:grid-cols-[minmax(0,1fr)_300px]"}`}>
       <section className="border border-border bg-card p-5 sm:p-6">
         <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1">
@@ -309,6 +512,24 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
                 </span>
                 <span className="sori-chip px-2.5 py-0.5">{savedLabel}</span>
               </div>
+              {isStoryScoped && (
+                <>
+                  <FormatToolbar
+                    editor={editor}
+                    preset={editorPreset}
+                    onPresetChange={setEditorPreset}
+                    onFormatted={(doc) => {
+                      setEditorJson(doc);
+                      setPlainText(editor?.getText() ?? "");
+                    }}
+                  />
+                  <UseAsSceneGoalButton
+                    editor={editor}
+                    storyUid={storyUid}
+                    selectedText={selectedText}
+                  />
+                </>
+              )}
             </div>
           </div>
           <div className="flex gap-3">
@@ -326,14 +547,16 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
             >
               {loading ? "Reading..." : "Analyze"}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMultiverseOpen(!multiverseOpen)}
-              className={multiverseOpen ? "border-accent text-accent" : ""}
-            >
-              {multiverseOpen ? "Close Lab" : "Test"}
-            </Button>
+            {!isStoryScoped && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMultiverseOpen(!multiverseOpen)}
+                className={multiverseOpen ? "border-accent text-accent" : ""}
+              >
+                {multiverseOpen ? "Close Lab" : "Test"}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -361,13 +584,12 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
         error={error}
       />
 
-      {multiverseOpen && (
+      {!isStoryScoped && multiverseOpen && (
         <MultiverseSidebar
           storyUid={storyUid}
           isOpen={multiverseOpen}
           onClose={() => setMultiverseOpen(false)}
           onBeatCreated={handleBeatCreated}
-          resumeNodeUid={resumeNodeUid}
           availableCharacterIds={
             // Prefer canonical CharacterNode UIDs from the graph so the
             // backend can find them during simulate_scene. Fall back to
@@ -384,6 +606,25 @@ export function SoriEditor({ storyUid: storyUidOverride }: SoriEditorProps = {})
           }
         />
       )}
+      </div>
+    </div>
+  );
+}
+
+function SaveToStoryBanner() {
+  return (
+    <div className="mx-4 mt-4 border border-accent/30 bg-accent/5 px-4 py-3 md:mx-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-foreground">
+          Characters, Talk, and Scene need a saved story. Promote this draft to unlock the playground.
+        </p>
+        <Link
+          href="/story/new"
+          className="shrink-0 border border-accent px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent hover:text-white"
+        >
+          Save to story
+        </Link>
+      </div>
     </div>
   );
 }
