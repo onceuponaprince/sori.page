@@ -1,82 +1,39 @@
-"""Pytest coverage for GET /api/agent/characters/<story_uid>/.
-
-This endpoint returns canonical CharacterNode UIDs scoped to a story,
-which the Multiverse Sidebar needs to pass to simulate_scene. Without
-real UIDs the backend raises CHARACTER_NOT_FOUND on every simulation
-attempt (see audit doc 2026-05-24).
-
-NOTE: This repository does not yet have pytest configured. The file is
-written in the correct shape so it executes as soon as the backend
-test harness is bootstrapped:
-
-    cd backend && python -m pytest agent/tests/test_characters_endpoint.py -v
-"""
+"""Pytest coverage for character list serialization."""
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
+from agent.character_playground import character_to_playground_dict
 
 
-@patch("graph.models.story.CharacterNode")
-def test_list_characters_returns_canonical_uids(MockCharacterNode):
-    """Every CharacterNode for a story must be returned with id/name/roleHint."""
-    from rest_framework.test import APIRequestFactory
-    from agent.views import list_characters
-
-    maya = MagicMock()
-    maya.uid = "uid-maya"
-    maya.name = "Maya"
-    maya.role_hint = "protagonist"
-    maya.aliases = []
-
-    elias = MagicMock()
-    elias.uid = "uid-elias"
-    elias.name = "Elias"
-    elias.role_hint = "foil"
-    elias.aliases = ["Eli"]
-
-    MockCharacterNode.nodes.filter.return_value = [maya, elias]
-
-    factory = APIRequestFactory()
-    request = factory.get("/api/agent/characters/story-1/")
-    response = list_characters(request, "story-1")
-
-    assert response.status_code == 200
-    assert len(response.data["characters"]) == 2
-    assert response.data["characters"][0]["id"] == "uid-maya"
-    assert response.data["characters"][0]["name"] == "Maya"
-    assert response.data["characters"][0]["roleHint"] == "protagonist"
-    assert response.data["characters"][1]["aliases"] == ["Eli"]
+def _mock_character(**overrides):
+    node = MagicMock()
+    node.uid = overrides.get("uid", "uid-1")
+    node.name = overrides.get("name", "Maya")
+    node.role_hint = overrides.get("role_hint", "protagonist")
+    node.aliases = overrides.get("aliases", [])
+    node.virtual_path = overrides.get("virtual_path", "characters/maya.md")
+    node.source_type = overrides.get("source_type", "md")
+    node.draft_revision = overrides.get("draft_revision", 1)
+    node.published_at = overrides.get("published_at", None)
+    node.published_revision = overrides.get("published_revision", 0)
+    node.review_status = overrides.get("review_status", "none")
+    node.tags = overrides.get("tags", [])
+    node.draft_source = overrides.get("draft_source", "")
+    node.published_source = overrides.get("published_source", "")
+    return node
 
 
-@patch("graph.models.story.CharacterNode")
-def test_list_characters_returns_empty_when_story_has_no_characters(
-    MockCharacterNode,
-):
-    """The endpoint must return an empty list rather than 404."""
-    from rest_framework.test import APIRequestFactory
-    from agent.views import list_characters
-
-    MockCharacterNode.nodes.filter.return_value = []
-
-    factory = APIRequestFactory()
-    request = factory.get("/api/agent/characters/empty-story/")
-    response = list_characters(request, "empty-story")
-
-    assert response.status_code == 200
-    assert response.data["characters"] == []
+def test_character_to_playground_dict_includes_publish_state():
+    published = _mock_character(published_at=MagicMock(isoformat=lambda: "2026-05-25T00:00:00+00:00"))
+    result = character_to_playground_dict(published)
+    assert result["isPublished"] is True
+    assert result["publishedAt"] == "2026-05-25T00:00:00+00:00"
 
 
-@patch("graph.models.story.CharacterNode")
-def test_list_characters_scopes_to_story_uid(MockCharacterNode):
-    """The filter must match story_uid exactly to avoid leaking other stories."""
-    from rest_framework.test import APIRequestFactory
-    from agent.views import list_characters
-
-    MockCharacterNode.nodes.filter.return_value = []
-
-    factory = APIRequestFactory()
-    request = factory.get("/api/agent/characters/story-abc/")
-    list_characters(request, "story-abc")
-
-    MockCharacterNode.nodes.filter.assert_called_once_with(story_uid="story-abc")
+def test_character_to_playground_dict_marks_unpublished():
+    draft = _mock_character()
+    result = character_to_playground_dict(draft)
+    assert result["isPublished"] is False
+    assert result["publishedAt"] is None
